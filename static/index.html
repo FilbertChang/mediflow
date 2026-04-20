@@ -934,7 +934,17 @@
         const data = await res.json();
         document.getElementById('thinking').remove();
         if (res.ok) {
-          messages.innerHTML += `<div class="msg ai"><div class="msg-label">mediflow ai</div>${data.answer}</div>`;
+          const sourcesHtml = data.sources && data.sources.length > 0
+            ? `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+            <div style="font-size:10px;color:var(--muted);margin-bottom:4px">sources</div>
+            ${data.sources.map(s => `
+              <div style="font-size:10px;color:var(--teal)">
+                📄 ${s.file} — [${s.section}]
+              </div>
+            `).join('')}
+           </div>`
+            : '';
+          messages.innerHTML += `<div class="msg ai"><div class="msg-label">mediflow ai</div>${data.answer}${sourcesHtml}</div>`;
         } else {
           messages.innerHTML += `<div class="msg ai" style="color:var(--danger)"><div class="msg-label">error</div>${data.detail}</div>`;
         }

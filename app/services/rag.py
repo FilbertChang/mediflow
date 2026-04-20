@@ -188,7 +188,7 @@ def ingest_document(filename: str, db=None) -> dict:
         "sections": list(sections_found)
     }
 
-def chat_with_document(filename: str, question: str) -> str:
+def chat_with_document(filename: str, question: str) -> dict:
     vectorstore_path = os.path.join(VECTORSTORE_DIR, filename)
     if not os.path.exists(vectorstore_path):
         raise FileNotFoundError(f"Document '{filename}' has not been ingested yet.")
@@ -205,4 +205,22 @@ def chat_with_document(filename: str, question: str) -> str:
 
     chain = prompt_template | llm
     answer = chain.invoke({"context": context, "question": question})
-    return answer
+
+    # Build source list
+    sources = []
+    seen = set()
+    for doc in relevant_docs:
+        source = doc.metadata.get("source", filename)
+        section = doc.metadata.get("section", "GENERAL")
+        key = f"{source}|{section}"
+        if key not in seen:
+            seen.add(key)
+            sources.append({
+                "file": source,
+                "section": section
+            })
+
+    return {
+        "answer": answer,
+        "sources": sources
+    }

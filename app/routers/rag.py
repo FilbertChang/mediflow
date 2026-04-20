@@ -27,15 +27,15 @@ def ingest(request: IngestRequest, db: Session = Depends(get_db)):
 @router.post("/chat")
 def chat(request: ChatRequest, db: Session = Depends(get_db)):
     try:
-        answer = chat_with_document(request.filename, request.question)
+        result = chat_with_document(request.filename, request.question)
         record = ChatHistory(
             filename=request.filename,
             question=request.question,
-            answer=answer
+            answer=result["answer"]
         )
         db.add(record)
         db.commit()
-        return {"answer": answer}
+        return result
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
