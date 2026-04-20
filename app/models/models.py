@@ -36,3 +36,21 @@ class IngestedDocument(Base):
     char_count = Column(Integer, nullable=False)
     ingested_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+class Patient(Base):
+    __tablename__ = "patients"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    age = Column(Integer, nullable=True)
+    gender = Column(String, nullable=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class PatientDocument(Base):
+    __tablename__ = "patient_documents"
+
+    id = Column(Integer, primary_key=True, index=True)
+    patient_id = Column(Integer, nullable=False)
+    filename = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

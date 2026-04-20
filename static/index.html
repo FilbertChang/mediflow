@@ -547,6 +547,14 @@
         </svg>
         Search
       </div>
+      <div class="nav-section">records</div>
+      <div class="nav-item" onclick="navigate('patients')">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="8" cy="5" r="3" />
+          <path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6" />
+        </svg>
+        Patients
+      </div>
     </div>
 
 
@@ -656,6 +664,7 @@
           </div>
         </div>
       </div>
+
       <!-- SUMMARIZE PAGE -->
       <div class="page" id="page-summarize">
         <div class="page-title">Auto Summarization</div>
@@ -683,6 +692,7 @@
           </div>
         </div>
       </div>
+
       <!-- HISTORY PAGE -->
       <div class="page" id="page-history">
         <div class="page-title">History</div>
@@ -711,6 +721,7 @@
           </div>
         </div>
       </div>
+
       <!-- SEARCH PAGE -->
       <div class="page" id="page-search">
         <div class="page-title">Semantic Search</div>
@@ -729,6 +740,53 @@
         </div>
         <div id="search-results"></div>
       </div>
+
+      <!-- PATIENTS PAGE -->
+      <div class="page" id="page-patients">
+        <div class="page-title">Patient Profiles</div>
+        <div class="page-sub">Manage patients and link their medical documents</div>
+        <div id="patients-alert" class="alert"></div>
+        <div class="grid2">
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div class="card">
+              <div class="card-title">create patient</div>
+              <input type="text" id="patient-name" placeholder="Full name" style="margin-bottom:8px">
+              <input type="number" id="patient-age" placeholder="Age" style="margin-bottom:8px">
+              <select id="patient-gender" style="margin-bottom:8px">
+                <option value="">-- gender --</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+              <textarea id="patient-notes" placeholder="Additional notes..."
+                style="min-height:60px;margin-bottom:8px"></textarea>
+              <button class="btn" style="width:100%" onclick="createPatient()">Create Patient</button>
+            </div>
+            <div class="card">
+              <div class="card-title">link document</div>
+              <select id="link-patient-select" style="margin-bottom:8px">
+                <option value="">-- select patient --</option>
+              </select>
+              <select id="link-doc-select" style="margin-bottom:8px">
+                <option value="">-- select document --</option>
+              </select>
+              <button class="btn btn-outline" style="width:100%" onclick="linkDocument()">Link Document</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">patient list</div>
+            <div id="patient-list">
+              <div class="empty-state">No patients yet.</div>
+            </div>
+          </div>
+        </div>
+        <div id="patient-detail" style="margin-top:16px;display:none">
+          <div class="card">
+            <div id="patient-detail-content"></div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -748,6 +806,7 @@
       if (page === 'summarize') loadSumDocSelect();
       if (page === 'history') loadHistory();
       if (page === 'search') document.getElementById('search-input').focus();
+      if (page === 'patients') loadPatients();
     }
 
     function showAlert(id, msg, type) {
@@ -1165,6 +1224,141 @@
       }
       btn.disabled = false;
       btn.textContent = 'Search';
+    }
+    async function loadPatients() {
+      const res = await fetch(API + '/patients/list');
+      const data = await res.json();
+      const el = document.getElementById('patient-list');
+      const linkSel = document.getElementById('link-patient-select');
+      linkSel.innerHTML = '<option value="">-- select patient --</option>';
+      if (data.length === 0) {
+        el.innerHTML = '<div class="empty-state">No patients yet.</div>';
+        return;
+      }
+      data.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id; opt.textContent = p.name;
+        linkSel.appendChild(opt);
+      });
+      el.innerHTML = data.map(p => `
+    <div class="file-item" style="cursor:pointer" onclick="viewPatient(${p.id})">
+      <div style="width:32px;height:32px;border-radius:50%;background:rgba(0,201,167,0.1);border:1px solid rgba(0,201,167,0.2);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--teal);flex-shrink:0">
+        ${p.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+      </div>
+      <div style="flex:1">
+        <div style="font-size:12px;color:var(--text)">${p.name}</div>
+        <div style="font-size:10px;color:var(--muted)">${p.age ? p.age + ' yrs' : ''} ${p.gender ? '· ' + p.gender : ''}</div>
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deletePatient(${p.id}, '${p.name}')">Delete</button>
+    </div>
+  `).join('');
+
+      // Load docs for link select
+      const docRes = await fetch(API + '/documents/list');
+      const docData = await docRes.json();
+      const docSel = document.getElementById('link-doc-select');
+      docSel.innerHTML = '<option value="">-- select document --</option>';
+      if (docData.files) docData.files.forEach(f => {
+        const opt = document.createElement('option');
+        opt.value = f; opt.textContent = f;
+        docSel.appendChild(opt);
+      });
+    }
+
+    async function createPatient() {
+      const name = document.getElementById('patient-name').value.trim();
+      const age = document.getElementById('patient-age').value;
+      const gender = document.getElementById('patient-gender').value;
+      const notes = document.getElementById('patient-notes').value.trim();
+      if (!name) { showAlert('patients-alert', 'Name is required.', 'error'); return; }
+      const res = await fetch(API + '/patients/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, age: age ? parseInt(age) : null, gender: gender || null, notes: notes || null })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showAlert('patients-alert', data.message, 'success');
+        document.getElementById('patient-name').value = '';
+        document.getElementById('patient-age').value = '';
+        document.getElementById('patient-gender').value = '';
+        document.getElementById('patient-notes').value = '';
+        loadPatients();
+      } else {
+        showAlert('patients-alert', data.detail || 'Failed to create patient.', 'error');
+      }
+    }
+
+    async function linkDocument() {
+      const patient_id = document.getElementById('link-patient-select').value;
+      const filename = document.getElementById('link-doc-select').value;
+      if (!patient_id || !filename) { showAlert('patients-alert', 'Select both a patient and a document.', 'error'); return; }
+      const res = await fetch(API + '/patients/link-document', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ patient_id: parseInt(patient_id), filename })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showAlert('patients-alert', data.message, 'success');
+      } else {
+        showAlert('patients-alert', data.detail || 'Failed to link document.', 'error');
+      }
+    }
+
+    async function viewPatient(id) {
+      const res = await fetch(API + '/patients/' + id);
+      const p = await res.json();
+      const detailEl = document.getElementById('patient-detail');
+      const contentEl = document.getElementById('patient-detail-content');
+      detailEl.style.display = 'block';
+      contentEl.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+      <div style="width:44px;height:44px;border-radius:50%;background:rgba(0,201,167,0.1);border:1px solid rgba(0,201,167,0.2);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--teal)">
+        ${p.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+      </div>
+      <div>
+        <div style="font-size:16px;color:var(--text);font-weight:500">${p.name}</div>
+        <div style="font-size:11px;color:var(--muted)">${p.age ? p.age + ' years old' : 'Age unknown'} ${p.gender ? '· ' + p.gender : ''}</div>
+      </div>
+    </div>
+    ${p.notes ? `<div style="font-size:12px;color:var(--muted);margin-bottom:16px;padding:8px 10px;background:var(--surface2);border-radius:4px">${p.notes}</div>` : ''}
+    <div class="card-title">linked documents (${p.documents.length})</div>
+    <div style="margin-bottom:16px">
+      ${p.documents.length === 0
+          ? '<div style="font-size:12px;color:var(--muted)">No documents linked yet.</div>'
+          : p.documents.map(f => `
+          <div class="file-item">
+            <span class="file-badge ${getBadgeClass(f)}">${f.split('.').pop()}</span>
+            <span class="file-name">${f}</span>
+          </div>`).join('')
+        }
+    </div>
+    <div class="card-title">extractions (${p.extractions.length})</div>
+    ${p.extractions.length === 0
+          ? '<div style="font-size:12px;color:var(--muted)">No extractions found.</div>'
+          : p.extractions.map(r => `
+        <div style="padding:8px 10px;background:var(--surface2);border-radius:4px;margin-bottom:6px;font-size:11px">
+          <div style="color:var(--muted);margin-bottom:4px">${new Date(r.created_at).toLocaleString()}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px">
+            ${(r.result.diagnosis || []).map(d => `<span class="tag">${d}</span>`).join('')}
+            ${(r.result.medications || []).map(m => `<span class="tag" style="color:var(--warn);border-color:var(--warn)">${m}</span>`).join('')}
+          </div>
+        </div>`).join('')
+        }
+  `;
+      detailEl.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    async function deletePatient(id, name) {
+      if (!confirm('Delete patient ' + name + '?')) return;
+      const res = await fetch(API + '/patients/' + id, { method: 'DELETE' });
+      const data = await res.json();
+      if (res.ok) {
+        showAlert('patients-alert', data.message, 'success');
+        document.getElementById('patient-detail').style.display = 'none';
+        loadPatients();
+      }
     }
     loadDashboard();
   </script>
