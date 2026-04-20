@@ -697,7 +697,11 @@
       <div class="page" id="page-history">
         <div class="page-title">History</div>
         <div class="page-sub">Past extractions, chats, and summaries from PostgreSQL</div>
-
+        <div style="display:flex;gap:8px;margin-bottom:16px">
+          <button class="btn btn-outline btn-sm" onclick="exportCSV('extractions')">⬇ Export Extractions</button>
+          <button class="btn btn-outline btn-sm" onclick="exportCSV('chats')">⬇ Export Chats</button>
+          <button class="btn btn-outline btn-sm" onclick="exportCSV('summaries')">⬇ Export Summaries</button>
+        </div>
         <div style="display:flex;gap:8px;margin-bottom:16px">
           <button class="btn btn-sm" id="htab-extraction" onclick="switchHistoryTab('extraction')">Extractions</button>
           <button class="btn btn-outline btn-sm" id="htab-chat" onclick="switchHistoryTab('chat')">RAG Chats</button>
@@ -1359,6 +1363,9 @@
         document.getElementById('patient-detail').style.display = 'none';
         loadPatients();
       }
+    }
+    function exportCSV(type) {
+      window.open(API + '/export/' + type, '_blank');
     }
     loadDashboard();
   </script>
