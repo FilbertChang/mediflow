@@ -1,0 +1,9 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+vectorstore/
+uploads/
+*.txt~
+New Text Document.txt
