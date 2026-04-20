@@ -900,7 +900,8 @@
         if (res.ok) {
           if (!ingestedDocs.includes(filename)) ingestedDocs.push(filename);
           renderIngestedList();
-          showAlert('rag-alert', data.message, 'success');
+          const alertType = data.status === 'skipped' ? 'error' : 'success';
+          showAlert('rag-alert', data.message, alertType);
         } else {
           showAlert('rag-alert', data.detail || 'Ingest failed.', 'error');
         }

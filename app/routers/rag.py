@@ -15,10 +15,10 @@ class ChatRequest(BaseModel):
     question: str
 
 @router.post("/ingest")
-def ingest(request: IngestRequest):
+def ingest(request: IngestRequest, db: Session = Depends(get_db)):
     try:
-        message = ingest_document(request.filename)
-        return {"message": message}
+        result = ingest_document(request.filename, db=db)
+        return result
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -43,5 +43,7 @@ def chat(request: ChatRequest, db: Session = Depends(get_db)):
 
 @router.get("/history")
 def get_chat_history(db: Session = Depends(get_db)):
-    records = db.query(ChatHistory).order_by(ChatHistory.created_at.desc()).limit(20).all()
+    records = db.query(ChatHistory).order_by(
+        ChatHistory.created_at.desc()
+    ).limit(20).all()
     return [{"id": r.id, "filename": r.filename, "question": r.question, "answer": r.answer, "created_at": str(r.created_at)} for r in records]

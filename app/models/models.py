@@ -26,3 +26,13 @@ class SummaryHistory(Base):
     filename = Column(String, nullable=False)
     summary = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class IngestedDocument(Base):
+    __tablename__ = "ingested_documents"
+
+    id = Column(Integer, primary_key=True, index=True)
+    filename = Column(String, nullable=False, unique=True)
+    chunk_count = Column(Integer, nullable=False)
+    char_count = Column(Integer, nullable=False)
+    ingested_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
