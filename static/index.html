@@ -490,8 +490,8 @@
     <!-- TOPBAR -->
     <div class="topbar">
       <div class="logo">MediFlow <span>v1.0</span></div>
-      <div class="status-dot"></div>
-      <div class="status-label">ollama · llama3.2 · local</div>
+      <div class="status-dot" id="health-dot"></div>
+      <div class="status-label" id="health-label">checking...</div>
     </div>
 
     <!-- SIDEBAR -->
@@ -1367,6 +1367,29 @@
     function exportCSV(type) {
       window.open(API + '/export/' + type, '_blank');
     }
+    async function checkHealth() {
+      try {
+        const res = await fetch(API + '/health');
+        const data = await res.json();
+        const dot = document.getElementById('health-dot');
+        const label = document.getElementById('health-label');
+        if (data.status === 'ok') {
+          dot.style.background = 'var(--teal)';
+          const docCount = data.services.storage?.documents || 0;
+          label.textContent = `ollama · llama3.2 · ${docCount} docs`;
+        } else {
+          dot.style.background = 'var(--warn)';
+          label.textContent = 'degraded — check services';
+        }
+      } catch (e) {
+        document.getElementById('health-dot').style.background = 'var(--danger)';
+        document.getElementById('health-label').textContent = 'server unreachable';
+      }
+    }
+
+    // Check health on load and every 30 seconds
+    checkHealth();
+    setInterval(checkHealth, 30000);
     loadDashboard();
   </script>
 </body>
