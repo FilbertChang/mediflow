@@ -540,6 +540,13 @@
         </svg>
         History
       </div>
+      <div class="nav-item" onclick="navigate('search')">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="6" cy="6" r="4" />
+          <path d="M10 10l3 3" />
+        </svg>
+        Search
+      </div>
     </div>
 
 
@@ -704,6 +711,24 @@
           </div>
         </div>
       </div>
+      <!-- SEARCH PAGE -->
+      <div class="page" id="page-search">
+        <div class="page-title">Semantic Search</div>
+        <div class="page-sub">Search across all ingested documents by meaning</div>
+        <div id="search-alert" class="alert"></div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-title">search query</div>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="search-input" placeholder="e.g. diabetes medication, chest pain, follow up..."
+              onkeydown="if(event.key==='Enter')runSearch()">
+            <button class="btn" onclick="runSearch()">Search</button>
+          </div>
+          <div style="margin-top:8px;font-size:11px;color:var(--muted)">
+            Searches across all ingested documents by semantic meaning — not just keywords.
+          </div>
+        </div>
+        <div id="search-results"></div>
+      </div>
     </div>
   </div>
 
@@ -722,6 +747,7 @@
       if (page === 'ragchat') loadDocSelect();
       if (page === 'summarize') loadSumDocSelect();
       if (page === 'history') loadHistory();
+      if (page === 'search') document.getElementById('search-input').focus();
     }
 
     function showAlert(id, msg, type) {
@@ -1094,6 +1120,51 @@
       } catch (e) {
         el.innerHTML = '<div class="empty-state">Failed to load summary history.</div>';
       }
+    }
+    async function runSearch() {
+      const query = document.getElementById('search-input').value.trim();
+      if (!query) { showAlert('search-alert', 'Please enter a search query.', 'error'); return; }
+      const btn = event.currentTarget;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>Searching...';
+      const resultsEl = document.getElementById('search-results');
+      resultsEl.innerHTML = '<div class="empty-state"><span class="spinner"></span> Searching across documents...</div>';
+      try {
+        const res = await fetch(API + '/search/query', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query, top_k: 5 })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          if (data.results.length === 0) {
+            resultsEl.innerHTML = '<div class="empty-state">No results found. Make sure documents are ingested first.</div>';
+          } else {
+            resultsEl.innerHTML = data.results.map((r, i) => `
+          <div class="card" style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <div style="display:flex;gap:8px;align-items:center">
+                <span style="font-size:10px;color:var(--muted)">#${i + 1}</span>
+                <span style="font-size:11px;color:var(--teal)">📄 ${r.file}</span>
+                <span class="tag">${r.section}</span>
+              </div>
+              <span style="font-size:10px;color:var(--muted)">score: ${r.score}</span>
+            </div>
+            <div style="font-size:12px;color:var(--text);line-height:1.8;padding:8px 10px;background:var(--surface2);border-radius:4px">
+              ${r.content}
+            </div>
+          </div>
+        `).join('');
+          }
+        } else {
+          showAlert('search-alert', data.detail || 'Search failed.', 'error');
+          resultsEl.innerHTML = '';
+        }
+      } catch (e) {
+        showAlert('search-alert', 'Could not connect to server.', 'error');
+      }
+      btn.disabled = false;
+      btn.textContent = 'Search';
     }
     loadDashboard();
   </script>
