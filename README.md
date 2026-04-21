@@ -103,7 +103,7 @@ Open **http://localhost:8000**
 | GET | `/export/summaries` | Export summaries as CSV |
 
 ## Project Structure
-'''
+```
 mediflow/
 ├── app/
 │   ├── routers/
@@ -132,7 +132,7 @@ mediflow/
 ├── docker-compose.yml
 ├── requirements.txt
 └── .env                       # Environment variables (not committed)
-'''
+```
 
 ## Author
 
