@@ -18,6 +18,8 @@ A production-ready local healthcare AI platform built with FastAPI, LangChain, a
 | 📡 LangSmith | Trace every LLM call across all pipelines |
 | 🏥 Health Check | Monitor database, Ollama, and storage status in real time |
 | 🐳 Docker | One-command deployment with Docker Compose |
+| 🔐 JWT Authentication | Secure login system with bcrypt password hashing |
+| 👥 Role-Based Access | Admin, Doctor, Nurse roles with different permissions |
 
 ## Tech Stack
 
@@ -101,6 +103,12 @@ Open **http://localhost:8000**
 | GET | `/export/extractions` | Export extractions as CSV |
 | GET | `/export/chats` | Export chat history as CSV |
 | GET | `/export/summaries` | Export summaries as CSV |
+| POST | `/auth/register` | Create a new user (admin only) |
+| POST | `/auth/login` | Login and receive JWT token |
+| GET | `/auth/me` | Get current user info |
+| GET | `/auth/users` | List all users (admin only) |
+| PUT | `/auth/users/{id}/deactivate` | Deactivate a user (admin only) |
+| PUT | `/auth/users/{id}/activate` | Activate a user (admin only) |
 
 ## Project Structure
 ```
@@ -115,6 +123,8 @@ mediflow/
 │   │   ├── patients.py        # Patient profiles
 │   │   ├── export.py          # CSV export
 │   │   └── health.py          # Health check
+│   │   └── auth.py            # JWT authentication & user management
+│   ├── auth.py                # JWT logic, password hashing, role checkers
 │   ├── services/
 │   │   ├── extractor.py       # LangChain extraction logic
 │   │   ├── rag.py             # RAG + section-aware chunking
