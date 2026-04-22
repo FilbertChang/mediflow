@@ -93,6 +93,7 @@ Open **http://localhost:8000**
 | File size limit | 10MB max upload size |
 | Secrets | All credentials in `.env`, never committed |
 | File validation | MIME type checking via magic bytes (not just extension) |
+| SQL injection | SQLAlchemy ORM parameterized queries + filename validation |
 
 ### Role Permissions
 

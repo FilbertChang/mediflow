@@ -79,6 +79,10 @@ def link_document(data: LinkDocument, db: Session = Depends(get_db)):
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found.")
 
+    # Validate filename
+    if ".." in data.filename or "/" in data.filename or "\\" in data.filename:
+        raise HTTPException(status_code=400, detail="Invalid filename.")
+
     existing = db.query(PatientDocument).filter(
         PatientDocument.patient_id == data.patient_id,
         PatientDocument.filename == data.filename
