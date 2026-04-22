@@ -92,6 +92,7 @@ Open **http://localhost:8000**
 | Path traversal | Filename validation on all file operations |
 | File size limit | 10MB max upload size |
 | Secrets | All credentials in `.env`, never committed |
+| File validation | MIME type checking via magic bytes (not just extension) |
 
 ### Role Permissions
 
