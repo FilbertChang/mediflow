@@ -20,6 +20,7 @@ A production-ready local healthcare AI platform built with FastAPI, LangChain, a
 | 🐳 Docker | One-command deployment with Docker Compose |
 | 🔐 JWT Authentication | Secure login system with bcrypt password hashing |
 | 👥 Role-Based Access | Admin, Doctor, Nurse roles with different permissions |
+| 🛡️ XSS Protection | HTML sanitization on all user-facing output |
 
 ## Tech Stack
 
@@ -78,6 +79,34 @@ Open **http://localhost:8000**
 - Ollama with Llama 3.2 — `ollama pull llama3.2`
 - PostgreSQL (or Docker — PostgreSQL is included automatically)
 - LangSmith account (free) — https://smith.langchain.com
+
+## Security
+
+| Protection | Implementation |
+|---|---|
+| Authentication | JWT tokens with 8-hour expiry |
+| Password hashing | bcrypt |
+| Role-based access | Admin, Doctor, Nurse with different permissions |
+| XSS protection | HTML sanitization on all rendered output |
+| CORS | Restricted to localhost origins |
+| Path traversal | Filename validation on all file operations |
+| File size limit | 10MB max upload size |
+| Secrets | All credentials in `.env`, never committed |
+
+### Role Permissions
+
+| Feature | Admin | Doctor | Nurse |
+|---|---|---|---|
+| Manage users | ✅ | ❌ | ❌ |
+| Upload documents | ✅ | ✅ | ✅ |
+| Delete documents | ✅ | ✅ | ❌ |
+| Clinical extraction | ✅ | ✅ | ❌ |
+| RAG chat | ✅ | ✅ | ✅ |
+| Summarization | ✅ | ✅ | ✅ |
+| Semantic search | ✅ | ✅ | ✅ |
+| Patient profiles | ✅ | ✅ | ✅ |
+| Export CSV | ✅ | ✅ | ❌ |
+| View history | ✅ | ✅ | ❌ |
 
 ## API Endpoints
 
