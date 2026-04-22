@@ -121,6 +121,10 @@ def chunk_document(docs: list, filename: str) -> list:
     return all_chunks
 
 def ingest_document(filename: str, db=None) -> dict:
+    # Prevent path traversal
+    if ".." in filename or "/" in filename or "\\" in filename:
+        raise ValueError("Invalid filename.")
+
     file_path = os.path.join(UPLOAD_DIR, filename)
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"File '{filename}' not found in uploads.")
@@ -189,6 +193,10 @@ def ingest_document(filename: str, db=None) -> dict:
     }
 
 def chat_with_document(filename: str, question: str) -> dict:
+    # Prevent path traversal
+    if ".." in filename or "/" in filename or "\\" in filename:
+        raise ValueError("Invalid filename.")
+
     vectorstore_path = os.path.join(VECTORSTORE_DIR, filename)
     if not os.path.exists(vectorstore_path):
         raise FileNotFoundError(f"Document '{filename}' has not been ingested yet.")
