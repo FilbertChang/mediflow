@@ -1,9 +1,11 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.services.rag import ingest_document, chat_with_document
 from app.database import get_db
 from app.models.models import ChatHistory
+from app.auth import get_current_user
+from app.limiter import limiter
 
 router = APIRouter(prefix="/rag", tags=["RAG Chat"])
 
@@ -15,9 +17,10 @@ class ChatRequest(BaseModel):
     question: str
 
 @router.post("/ingest")
-def ingest(request: IngestRequest, db: Session = Depends(get_db)):
+@limiter.limit("20/minute")
+def ingest(request: Request, data: IngestRequest, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     try:
-        result = ingest_document(request.filename, db=db)
+        result = ingest_document(data.filename, db=db)
         return result
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -25,12 +28,13 @@ def ingest(request: IngestRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/chat")
-def chat(request: ChatRequest, db: Session = Depends(get_db)):
+@limiter.limit("20/minute")
+def chat(request: Request, data: ChatRequest, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     try:
-        result = chat_with_document(request.filename, request.question)
+        result = chat_with_document(data.filename, data.question)
         record = ChatHistory(
-            filename=request.filename,
-            question=request.question,
+            filename=data.filename,
+            question=data.question,
             answer=result["answer"]
         )
         db.add(record)
@@ -42,7 +46,7 @@ def chat(request: ChatRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/history")
-def get_chat_history(db: Session = Depends(get_db)):
+def get_chat_history(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     records = db.query(ChatHistory).order_by(
         ChatHistory.created_at.desc()
     ).limit(20).all()

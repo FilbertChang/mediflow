@@ -1,10 +1,11 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.services.extractor import extract_clinical_data
 from app.database import get_db
 from app.models.models import ExtractionHistory
-from app.auth import require_doctor_or_above, get_current_user
+from app.auth import require_doctor_or_above
+from app.limiter import limiter
 import json
 
 router = APIRouter(prefix="/extract", tags=["Clinical Extraction"])
@@ -13,7 +14,9 @@ class NoteInput(BaseModel):
     note: str
 
 @router.post("/clinical")
+@limiter.limit("10/minute")
 def extract_from_note(
+    request: Request,
     input: NoteInput,
     db: Session = Depends(get_db),
     current_user=Depends(require_doctor_or_above)

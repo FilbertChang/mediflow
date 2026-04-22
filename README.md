@@ -94,6 +94,7 @@ Open **http://localhost:8000**
 | Secrets | All credentials in `.env`, never committed |
 | File validation | MIME type checking via magic bytes (not just extension) |
 | SQL injection | SQLAlchemy ORM parameterized queries + filename validation |
+| Rate limiting | 10 req/min on AI endpoints, 20 req/min on ingestion (slowapi) |
 
 ### Role Permissions
 

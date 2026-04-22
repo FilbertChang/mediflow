@@ -6,9 +6,12 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 from app.routers import documents, extraction, rag, summarization, search, patients, export, health, auth
 from app.database import engine
 from app.models import models
+from app.limiter import limiter
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -17,6 +20,10 @@ app = FastAPI(
     version="1.0.0",
     description="Production-ready healthcare AI platform."
 )
+
+# Rate limiter
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
