@@ -75,7 +75,6 @@
       height: 7px;
       border-radius: 50%;
       background: var(--teal);
-      margin-left: auto
     }
 
     .status-label {
@@ -485,319 +484,480 @@
 </head>
 
 <body>
-  <div class="shell">
-
-    <!-- TOPBAR -->
-    <div class="topbar">
-      <div class="logo">MediFlow <span>v1.0</span></div>
-      <div class="status-dot" id="health-dot"></div>
-      <div class="status-label" id="health-label">checking...</div>
+  <!-- LOGIN PAGE -->
+  <div id="login-page" style="display:flex;align-items:center;justify-content:center;height:100vh">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:40px;width:360px">
+      <div style="font-family:var(--font-serif);font-size:28px;font-weight:300;color:var(--teal);margin-bottom:4px">
+        MediFlow</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:28px">Healthcare AI Platform</div>
+      <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:6px">USERNAME</div>
+      <input type="text" id="login-username" placeholder="Enter username" style="margin-bottom:12px"
+        onkeydown="if(event.key==='Enter')handleLogin()">
+      <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:6px">PASSWORD</div>
+      <input type="password" id="login-password" placeholder="Enter password" style="margin-bottom:16px"
+        onkeydown="if(event.key==='Enter')handleLogin()">
+      <div id="login-error"
+        style="display:none;font-size:11px;color:var(--danger);margin-bottom:12px;padding:8px 10px;background:rgba(255,107,107,0.1);border-radius:4px;border:1px solid rgba(255,107,107,0.3)">
+      </div>
+      <button class="btn" id="login-btn" style="width:100%" onclick="handleLogin()">Sign In</button>
+      <div style="font-size:10px;color:var(--muted);margin-top:16px;text-align:center">Contact your administrator to get
+        an account.</div>
     </div>
+  </div>
 
-    <!-- SIDEBAR -->
-    <div class="sidebar">
-      <div class="nav-section">workspace</div>
-      <div class="nav-item active" onclick="navigate('dashboard')">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-          <rect x="1" y="1" width="6" height="6" rx="1" />
-          <rect x="9" y="1" width="6" height="6" rx="1" />
-          <rect x="1" y="9" width="6" height="6" rx="1" />
-          <rect x="9" y="9" width="6" height="6" rx="1" />
-        </svg>
-        Dashboard
-      </div>
-      <div class="nav-item" onclick="navigate('documents')">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M3 2h7l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z" />
-          <path d="M10 2v4h4" />
-        </svg>
-        Documents
-      </div>
-      <div class="nav-section">ai tools</div>
-      <div class="nav-item" onclick="navigate('extraction')">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-          <circle cx="8" cy="8" r="6" />
-          <path d="M5 8h6M8 5l3 3-3 3" />
-        </svg>
-        Extraction
-      </div>
-      <div class="nav-item" onclick="navigate('ragchat')">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M2 3h12v8H9l-3 3v-3H2z" />
-        </svg>
-        RAG Chat
-      </div>
-      <div class="nav-item" onclick="navigate('summarize')">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M2 4h12M2 8h8M2 12h6" />
-        </svg>
-        Summarize
-      </div>
-      <div class="nav-item" onclick="navigate('history')">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-          <circle cx="8" cy="8" r="6" />
-          <path d="M8 5v3l2 2" />
-        </svg>
-        History
-      </div>
-      <div class="nav-item" onclick="navigate('search')">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-          <circle cx="6" cy="6" r="4" />
-          <path d="M10 10l3 3" />
-        </svg>
-        Search
-      </div>
-      <div class="nav-section">records</div>
-      <div class="nav-item" onclick="navigate('patients')">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-          <circle cx="8" cy="5" r="3" />
-          <path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6" />
-        </svg>
-        Patients
-      </div>
-    </div>
+  <!-- APP -->
+  <div id="app" style="display:none">
+    <div class="shell">
 
-
-    <!-- MAIN -->
-    <div class="main">
-
-      <!-- DASHBOARD PAGE -->
-      <div class="page active" id="page-dashboard">
-        <div class="page-title">Dashboard</div>
-        <div class="page-sub">Healthcare AI · Local inference · No cloud required</div>
-        <div class="stats">
-          <div class="stat">
-            <div class="stat-label">documents</div>
-            <div class="stat-val" id="stat-docs">0</div>
+      <!-- TOPBAR -->
+      <div class="topbar">
+        <div class="logo">MediFlow <span>v1.0</span></div>
+        <div class="status-dot" id="health-dot"></div>
+        <div class="status-label" id="health-label">checking...</div>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
+          <div style="font-size:11px;color:var(--muted)">
+            <span id="current-user-name"></span>
+            <span id="current-user-role"
+              style="margin-left:6px;padding:2px 8px;border-radius:3px;font-size:10px"></span>
           </div>
-          <div class="stat">
-            <div class="stat-label">extractions run</div>
-            <div class="stat-val" id="stat-extractions">0</div>
-          </div>
-          <div class="stat">
-            <div class="stat-label">rag queries</div>
-            <div class="stat-val" id="stat-queries">0</div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-title">recent documents</div>
-          <div id="dashboard-files">
-            <div class="empty-state">No documents yet. Upload one to get started.</div>
-          </div>
+          <button class="btn btn-outline btn-sm" onclick="logout()">Logout</button>
         </div>
       </div>
 
-      <!-- DOCUMENTS PAGE -->
-      <div class="page" id="page-documents">
-        <div class="page-title">Documents</div>
-        <div class="page-sub">Upload and manage your medical files</div>
-        <div id="doc-alert" class="alert"></div>
-        <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
-          <div class="upload-icon">⬆</div>
-          <div>Drop files here or click to browse</div>
-          <div style="font-size:10px;margin-top:6px;opacity:0.6">PDF · DOCX · TXT · CSV · XLSX</div>
+      <!-- SIDEBAR -->
+      <div class="sidebar">
+        <div class="nav-section">workspace</div>
+        <div class="nav-item active" onclick="navigate('dashboard')">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="1" y="1" width="6" height="6" rx="1" />
+            <rect x="9" y="1" width="6" height="6" rx="1" />
+            <rect x="1" y="9" width="6" height="6" rx="1" />
+            <rect x="9" y="9" width="6" height="6" rx="1" />
+          </svg>
+          Dashboard
         </div>
-        <input type="file" id="file-input" style="display:none" accept=".pdf,.txt,.docx,.csv,.xlsx"
-          onchange="uploadFile(this)">
-        <div class="card">
-          <div class="card-title">uploaded files</div>
-          <div id="file-list">
-            <div class="empty-state">No files uploaded yet.</div>
-          </div>
+        <div class="nav-item" onclick="navigate('documents')">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M3 2h7l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z" />
+            <path d="M10 2v4h4" />
+          </svg>
+          Documents
+        </div>
+        <div class="nav-section">ai tools</div>
+        <div class="nav-item" onclick="navigate('extraction')">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="8" cy="8" r="6" />
+            <path d="M5 8h6M8 5l3 3-3 3" />
+          </svg>
+          Extraction
+        </div>
+        <div class="nav-item" onclick="navigate('ragchat')">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M2 3h12v8H9l-3 3v-3H2z" />
+          </svg>
+          RAG Chat
+        </div>
+        <div class="nav-item" onclick="navigate('summarize')">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M2 4h12M2 8h8M2 12h6" />
+          </svg>
+          Summarize
+        </div>
+        <div class="nav-item" onclick="navigate('history')">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="8" cy="8" r="6" />
+            <path d="M8 5v3l2 2" />
+          </svg>
+          History
+        </div>
+        <div class="nav-item" onclick="navigate('search')">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="6" cy="6" r="4" />
+            <path d="M10 10l3 3" />
+          </svg>
+          Search
+        </div>
+        <div class="nav-section">records</div>
+        <div class="nav-item" onclick="navigate('patients')">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="8" cy="5" r="3" />
+            <path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6" />
+          </svg>
+          Patients
+        </div>
+        <div class="nav-item admin-only" onclick="navigate('users')" style="display:none">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="5" cy="5" r="2" />
+            <circle cx="11" cy="5" r="2" />
+            <path d="M1 13c0-2.2 1.8-4 4-4s4 1.8 4 4" />
+            <path d="M11 9c1.1 0 3 .9 3 4" />
+          </svg>
+          Users
         </div>
       </div>
 
-      <!-- EXTRACTION PAGE -->
-      <div class="page" id="page-extraction">
-        <div class="page-title">Clinical Extraction</div>
-        <div class="page-sub">Extract structured EHR fields from doctor notes</div>
-        <div id="ext-alert" class="alert"></div>
-        <div class="grid2">
-          <div class="card">
-            <div class="card-title">paste doctor note</div>
-            <textarea id="note-input"
-              placeholder="Patient John Doe, 45-year-old male, presents with chest pain..."></textarea>
-            <button class="btn" style="margin-top:10px;width:100%" onclick="runExtraction()">Extract Clinical
-              Data</button>
-          </div>
-          <div class="card">
-            <div class="card-title">extraction result</div>
-            <div id="extraction-result">
-              <div class="empty-state">Results will appear here.</div>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      <!-- RAG CHAT PAGE -->
-      <div class="page" id="page-ragchat">
-        <div class="page-title">RAG Chat</div>
-        <div class="page-sub">Ask questions about your uploaded documents</div>
-        <div id="rag-alert" class="alert"></div>
-        <div class="grid2">
-          <div style="display:flex;flex-direction:column;gap:12px">
+      <!-- MAIN -->
+      <div class="main">
+
+        <!-- USERS PAGE (ADMIN ONLY) -->
+        <div class="page" id="page-users">
+          <div class="page-title">User Management</div>
+          <div class="page-sub">Manage medical staff accounts</div>
+          <div id="users-alert" class="alert"></div>
+          <div class="grid2">
             <div class="card">
-              <div class="card-title">select document</div>
-              <select id="rag-doc-select">
-                <option value="">-- choose a document --</option>
+              <div class="card-title">create new user</div>
+              <input type="text" id="new-username" placeholder="Username" style="margin-bottom:8px">
+              <input type="password" id="new-password" placeholder="Password" style="margin-bottom:8px">
+              <input type="text" id="new-fullname" placeholder="Full name" style="margin-bottom:8px">
+              <select id="new-role" style="margin-bottom:12px">
+                <option value="nurse">Nurse</option>
+                <option value="doctor">Doctor</option>
+                <option value="admin">Admin</option>
               </select>
-              <button class="btn btn-outline btn-sm" style="margin-top:10px;width:100%"
-                onclick="ingestDocument()">Ingest Document</button>
+              <button class="btn" style="width:100%" onclick="createUser()">Create User</button>
             </div>
             <div class="card">
-              <div class="card-title">ingested documents</div>
-              <div id="ingested-list">
-                <div class="empty-state" style="padding:12px">None ingested yet.</div>
+              <div class="card-title">staff list</div>
+              <div id="users-list">
+                <div class="empty-state">Loading...</div>
               </div>
             </div>
           </div>
-          <div class="card" style="display:flex;flex-direction:column">
-            <div class="card-title">chat</div>
-            <div class="chat-messages" id="chat-messages">
-              <div class="empty-state">Ingest a document then ask a question.</div>
-            </div>
-            <div class="chat-input-row">
-              <input type="text" id="chat-input" placeholder="Ask about your document..."
-                onkeydown="if(event.key==='Enter')sendChat()">
-              <button class="btn btn-sm" onclick="sendChat()">Ask</button>
-            </div>
-          </div>
         </div>
-      </div>
 
-      <!-- SUMMARIZE PAGE -->
-      <div class="page" id="page-summarize">
-        <div class="page-title">Auto Summarization</div>
-        <div class="page-sub">Generate an AI summary of any uploaded document</div>
-        <div id="sum-alert" class="alert"></div>
-        <div class="grid2">
-          <div class="card">
-            <div class="card-title">select document</div>
-            <select id="sum-doc-select">
-              <option value="">-- choose a document --</option>
-            </select>
-            <button class="btn" style="margin-top:10px;width:100%" onclick="runSummarize()">
-              Generate Summary
-            </button>
-            <div style="margin-top:16px;font-size:11px;color:var(--muted);line-height:1.7">
-              The AI will read your document and produce a concise medical summary covering key findings, diagnoses,
-              treatments, and follow-up actions.
+        <!-- DASHBOARD PAGE -->
+        <div class="page active" id="page-dashboard">
+          <div class="page-title">Dashboard</div>
+          <div class="page-sub">Healthcare AI · Local inference · No cloud required</div>
+          <div class="stats">
+            <div class="stat">
+              <div class="stat-label">documents</div>
+              <div class="stat-val" id="stat-docs">0</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">extractions run</div>
+              <div class="stat-val" id="stat-extractions">0</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">rag queries</div>
+              <div class="stat-val" id="stat-queries">0</div>
             </div>
           </div>
           <div class="card">
-            <div class="card-title">summary result</div>
-            <div id="summary-result">
-              <div class="empty-state">Select a document and click Generate Summary.</div>
+            <div class="card-title">recent documents</div>
+            <div id="dashboard-files">
+              <div class="empty-state">No documents yet. Upload one to get started.</div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- HISTORY PAGE -->
-      <div class="page" id="page-history">
-        <div class="page-title">History</div>
-        <div class="page-sub">Past extractions, chats, and summaries from PostgreSQL</div>
-        <div style="display:flex;gap:8px;margin-bottom:16px">
-          <button class="btn btn-outline btn-sm" onclick="exportCSV('extractions')">⬇ Export Extractions</button>
-          <button class="btn btn-outline btn-sm" onclick="exportCSV('chats')">⬇ Export Chats</button>
-          <button class="btn btn-outline btn-sm" onclick="exportCSV('summaries')">⬇ Export Summaries</button>
-        </div>
-        <div style="display:flex;gap:8px;margin-bottom:16px">
-          <button class="btn btn-sm" id="htab-extraction" onclick="switchHistoryTab('extraction')">Extractions</button>
-          <button class="btn btn-outline btn-sm" id="htab-chat" onclick="switchHistoryTab('chat')">RAG Chats</button>
-          <button class="btn btn-outline btn-sm" id="htab-summary"
-            onclick="switchHistoryTab('summary')">Summaries</button>
+        <!-- DOCUMENTS PAGE -->
+        <div class="page" id="page-documents">
+          <div class="page-title">Documents</div>
+          <div class="page-sub">Upload and manage your medical files</div>
+          <div id="doc-alert" class="alert"></div>
+          <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+            <div class="upload-icon">⬆</div>
+            <div>Drop files here or click to browse</div>
+            <div style="font-size:10px;margin-top:6px;opacity:0.6">PDF · DOCX · TXT · CSV · XLSX</div>
+          </div>
+          <input type="file" id="file-input" style="display:none" accept=".pdf,.txt,.docx,.csv,.xlsx"
+            onchange="uploadFile(this)">
+          <div class="card">
+            <div class="card-title">uploaded files</div>
+            <div id="file-list">
+              <div class="empty-state">No files uploaded yet.</div>
+            </div>
+          </div>
         </div>
 
-        <div id="history-extraction">
-          <div id="extraction-history-list">
-            <div class="empty-state">Loading...</div>
-          </div>
-        </div>
-        <div id="history-chat" style="display:none">
-          <div id="chat-history-list">
-            <div class="empty-state">Loading...</div>
-          </div>
-        </div>
-        <div id="history-summary" style="display:none">
-          <div id="summary-history-list">
-            <div class="empty-state">Loading...</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- SEARCH PAGE -->
-      <div class="page" id="page-search">
-        <div class="page-title">Semantic Search</div>
-        <div class="page-sub">Search across all ingested documents by meaning</div>
-        <div id="search-alert" class="alert"></div>
-        <div class="card" style="margin-bottom:16px">
-          <div class="card-title">search query</div>
-          <div style="display:flex;gap:8px">
-            <input type="text" id="search-input" placeholder="e.g. diabetes medication, chest pain, follow up..."
-              onkeydown="if(event.key==='Enter')runSearch()">
-            <button class="btn" onclick="runSearch()">Search</button>
-          </div>
-          <div style="margin-top:8px;font-size:11px;color:var(--muted)">
-            Searches across all ingested documents by semantic meaning — not just keywords.
-          </div>
-        </div>
-        <div id="search-results"></div>
-      </div>
-
-      <!-- PATIENTS PAGE -->
-      <div class="page" id="page-patients">
-        <div class="page-title">Patient Profiles</div>
-        <div class="page-sub">Manage patients and link their medical documents</div>
-        <div id="patients-alert" class="alert"></div>
-        <div class="grid2">
-          <div style="display:flex;flex-direction:column;gap:12px">
+        <!-- EXTRACTION PAGE -->
+        <div class="page" id="page-extraction">
+          <div class="page-title">Clinical Extraction</div>
+          <div class="page-sub">Extract structured EHR fields from doctor notes</div>
+          <div id="ext-alert" class="alert"></div>
+          <div class="grid2">
             <div class="card">
-              <div class="card-title">create patient</div>
-              <input type="text" id="patient-name" placeholder="Full name" style="margin-bottom:8px">
-              <input type="number" id="patient-age" placeholder="Age" style="margin-bottom:8px">
-              <select id="patient-gender" style="margin-bottom:8px">
-                <option value="">-- gender --</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-                <option value="other">Other</option>
-              </select>
-              <textarea id="patient-notes" placeholder="Additional notes..."
-                style="min-height:60px;margin-bottom:8px"></textarea>
-              <button class="btn" style="width:100%" onclick="createPatient()">Create Patient</button>
+              <div class="card-title">paste doctor note</div>
+              <textarea id="note-input"
+                placeholder="Patient John Doe, 45-year-old male, presents with chest pain..."></textarea>
+              <button class="btn" style="margin-top:10px;width:100%" onclick="runExtraction()">Extract Clinical
+                Data</button>
             </div>
             <div class="card">
-              <div class="card-title">link document</div>
-              <select id="link-patient-select" style="margin-bottom:8px">
-                <option value="">-- select patient --</option>
-              </select>
-              <select id="link-doc-select" style="margin-bottom:8px">
-                <option value="">-- select document --</option>
-              </select>
-              <button class="btn btn-outline" style="width:100%" onclick="linkDocument()">Link Document</button>
-            </div>
-          </div>
-          <div class="card">
-            <div class="card-title">patient list</div>
-            <div id="patient-list">
-              <div class="empty-state">No patients yet.</div>
+              <div class="card-title">extraction result</div>
+              <div id="extraction-result">
+                <div class="empty-state">Results will appear here.</div>
+              </div>
             </div>
           </div>
         </div>
-        <div id="patient-detail" style="margin-top:16px;display:none">
-          <div class="card">
-            <div id="patient-detail-content"></div>
-          </div>
-        </div>
-      </div>
 
+        <!-- RAG CHAT PAGE -->
+        <div class="page" id="page-ragchat">
+          <div class="page-title">RAG Chat</div>
+          <div class="page-sub">Ask questions about your uploaded documents</div>
+          <div id="rag-alert" class="alert"></div>
+          <div class="grid2">
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div class="card">
+                <div class="card-title">select document</div>
+                <select id="rag-doc-select">
+                  <option value="">-- choose a document --</option>
+                </select>
+                <button class="btn btn-outline btn-sm" style="margin-top:10px;width:100%"
+                  onclick="ingestDocument()">Ingest Document</button>
+              </div>
+              <div class="card">
+                <div class="card-title">ingested documents</div>
+                <div id="ingested-list">
+                  <div class="empty-state" style="padding:12px">None ingested yet.</div>
+                </div>
+              </div>
+            </div>
+            <div class="card" style="display:flex;flex-direction:column">
+              <div class="card-title">chat</div>
+              <div class="chat-messages" id="chat-messages">
+                <div class="empty-state">Ingest a document then ask a question.</div>
+              </div>
+              <div class="chat-input-row">
+                <input type="text" id="chat-input" placeholder="Ask about your document..."
+                  onkeydown="if(event.key==='Enter')sendChat()">
+                <button class="btn btn-sm" onclick="sendChat()">Ask</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUMMARIZE PAGE -->
+        <div class="page" id="page-summarize">
+          <div class="page-title">Auto Summarization</div>
+          <div class="page-sub">Generate an AI summary of any uploaded document</div>
+          <div id="sum-alert" class="alert"></div>
+          <div class="grid2">
+            <div class="card">
+              <div class="card-title">select document</div>
+              <select id="sum-doc-select">
+                <option value="">-- choose a document --</option>
+              </select>
+              <button class="btn" style="margin-top:10px;width:100%" onclick="runSummarize()">
+                Generate Summary
+              </button>
+              <div style="margin-top:16px;font-size:11px;color:var(--muted);line-height:1.7">
+                The AI will read your document and produce a concise medical summary covering key findings, diagnoses,
+                treatments, and follow-up actions.
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-title">summary result</div>
+              <div id="summary-result">
+                <div class="empty-state">Select a document and click Generate Summary.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- HISTORY PAGE -->
+        <div class="page" id="page-history">
+          <div class="page-title">History</div>
+          <div class="page-sub">Past extractions, chats, and summaries from PostgreSQL</div>
+          <div id="history-alert" class="alert"></div>
+          <div style="display:flex;gap:8px;margin-bottom:16px">
+            <button class="btn btn-outline btn-sm" onclick="exportCSV('extractions')">⬇ Export Extractions</button>
+            <button class="btn btn-outline btn-sm" onclick="exportCSV('chats')">⬇ Export Chats</button>
+            <button class="btn btn-outline btn-sm" onclick="exportCSV('summaries')">⬇ Export Summaries</button>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:16px">
+            <button class="btn btn-sm" id="htab-extraction"
+              onclick="switchHistoryTab('extraction')">Extractions</button>
+            <button class="btn btn-outline btn-sm" id="htab-chat" onclick="switchHistoryTab('chat')">RAG
+              Chats</button>
+            <button class="btn btn-outline btn-sm" id="htab-summary"
+              onclick="switchHistoryTab('summary')">Summaries</button>
+          </div>
+
+          <div id="history-extraction">
+            <div id="extraction-history-list">
+              <div class="empty-state">Loading...</div>
+            </div>
+          </div>
+          <div id="history-chat" style="display:none">
+            <div id="chat-history-list">
+              <div class="empty-state">Loading...</div>
+            </div>
+          </div>
+          <div id="history-summary" style="display:none">
+            <div id="summary-history-list">
+              <div class="empty-state">Loading...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SEARCH PAGE -->
+        <div class="page" id="page-search">
+          <div class="page-title">Semantic Search</div>
+          <div class="page-sub">Search across all ingested documents by meaning</div>
+          <div id="search-alert" class="alert"></div>
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-title">search query</div>
+            <div style="display:flex;gap:8px">
+              <input type="text" id="search-input" placeholder="e.g. diabetes medication, chest pain, follow up..."
+                onkeydown="if(event.key==='Enter')runSearch()">
+              <button class="btn" onclick="runSearch()">Search</button>
+            </div>
+            <div style="margin-top:8px;font-size:11px;color:var(--muted)">
+              Searches across all ingested documents by semantic meaning — not just keywords.
+            </div>
+          </div>
+          <div id="search-results"></div>
+        </div>
+
+        <!-- PATIENTS PAGE -->
+        <div class="page" id="page-patients">
+          <div class="page-title">Patient Profiles</div>
+          <div class="page-sub">Manage patients and link their medical documents</div>
+          <div id="patients-alert" class="alert"></div>
+          <div class="grid2">
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div class="card">
+                <div class="card-title">create patient</div>
+                <input type="text" id="patient-name" placeholder="Full name" style="margin-bottom:8px">
+                <input type="number" id="patient-age" placeholder="Age" style="margin-bottom:8px">
+                <select id="patient-gender" style="margin-bottom:8px">
+                  <option value="">-- gender --</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                </select>
+                <textarea id="patient-notes" placeholder="Additional notes..."
+                  style="min-height:60px;margin-bottom:8px"></textarea>
+                <button class="btn" style="width:100%" onclick="createPatient()">Create Patient</button>
+              </div>
+              <div class="card">
+                <div class="card-title">link document</div>
+                <select id="link-patient-select" style="margin-bottom:8px">
+                  <option value="">-- select patient --</option>
+                </select>
+                <select id="link-doc-select" style="margin-bottom:8px">
+                  <option value="">-- select document --</option>
+                </select>
+                <button class="btn btn-outline" style="width:100%" onclick="linkDocument()">Link Document</button>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-title">patient list</div>
+              <div id="patient-list">
+                <div class="empty-state">No patients yet.</div>
+              </div>
+            </div>
+          </div>
+          <div id="patient-detail" style="margin-top:16px;display:none">
+            <div class="card">
+              <div id="patient-detail-content"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
     </div>
   </div>
 
   <script>
     const API = 'http://localhost:8000';
+    let authToken = localStorage.getItem('mediflow_token');
+    let currentUser = JSON.parse(localStorage.getItem('mediflow_user') || 'null');
     let stats = { docs: 0, extractions: 0, queries: 0 };
     let ingestedDocs = [];
+
+    async function apiFetch(url, options = {}) {
+      options.headers = {
+        ...options.headers,
+        'Authorization': `Bearer ${authToken}`
+      };
+      const res = await fetch(url, options);
+      if (res.status === 401) { logout(); return res; }
+      return res;
+    }
+
+    function logout() {
+      localStorage.removeItem('mediflow_token');
+      localStorage.removeItem('mediflow_user');
+      authToken = null;
+      currentUser = null;
+      document.getElementById('app').style.display = 'none';
+      document.getElementById('login-page').style.display = 'flex';
+    }
+
+    function applyRoleUI() {
+      const role = currentUser?.role;
+      const roleColors = {
+        admin: 'rgba(255,107,107,0.15)',
+        doctor: 'rgba(0,201,167,0.15)',
+        nurse: 'rgba(240,165,0,0.15)'
+      };
+      const textColors = {
+        admin: 'var(--danger)',
+        doctor: 'var(--teal)',
+        nurse: 'var(--warn)'
+      };
+      document.getElementById('current-user-name').textContent = currentUser?.full_name || currentUser?.username;
+      const roleEl = document.getElementById('current-user-role');
+      roleEl.textContent = role;
+      roleEl.style.background = roleColors[role] || 'rgba(0,201,167,0.15)';
+      roleEl.style.color = textColors[role] || 'var(--teal)';
+      roleEl.style.padding = '2px 8px';
+      roleEl.style.borderRadius = '3px';
+      roleEl.style.fontSize = '10px';
+
+      // Show/hide admin-only items
+      document.querySelectorAll('.admin-only').forEach(el => {
+        el.style.display = role === 'admin' ? 'flex' : 'none';
+      });
+
+      // Show/hide doctor-and-above items
+      document.querySelectorAll('.doctor-only').forEach(el => {
+        el.style.display = ['admin', 'doctor'].includes(role) ? 'flex' : 'none';
+      });
+    }
+
+    async function handleLogin() {
+      const username = document.getElementById('login-username').value.trim();
+      const password = document.getElementById('login-password').value.trim();
+      if (!username || !password) return;
+      const btn = document.getElementById('login-btn');
+      btn.disabled = true;
+      btn.textContent = 'Signing in...';
+      try {
+        const formData = new FormData();
+        formData.append('username', username);
+        formData.append('password', password);
+        const res = await fetch(API + '/auth/login', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (res.ok) {
+          authToken = data.access_token;
+          currentUser = { username: data.username, full_name: data.full_name, role: data.role };
+          localStorage.setItem('mediflow_token', authToken);
+          localStorage.setItem('mediflow_user', JSON.stringify(currentUser));
+          document.getElementById('login-error').style.display = 'none';
+          document.getElementById('login-page').style.display = 'none';
+          document.getElementById('app').style.display = 'grid';
+          applyRoleUI();
+          loadDashboard();
+          checkHealth();
+          setInterval(checkHealth, 30000);
+        } else {
+          document.getElementById('login-error').textContent = data.detail || 'Invalid credentials.';
+          document.getElementById('login-error').style.display = 'block';
+        }
+      } catch (e) {
+        document.getElementById('login-error').textContent = 'Could not connect to server.';
+        document.getElementById('login-error').style.display = 'block';
+      }
+      btn.disabled = false;
+      btn.textContent = 'Sign In';
+    }
 
     function navigate(page) {
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -811,6 +971,7 @@
       if (page === 'history') loadHistory();
       if (page === 'search') document.getElementById('search-input').focus();
       if (page === 'patients') loadPatients();
+      if (page === 'users') loadUsers();
     }
 
     function showAlert(id, msg, type) {
@@ -826,7 +987,7 @@
     }
 
     async function loadFiles() {
-      const res = await fetch(API + '/documents/list');
+      const res = await apiFetch(API + '/documents/list');
       const data = await res.json();
       const list = document.getElementById('file-list');
       if (!data.files || data.files.length === 0) {
@@ -847,7 +1008,7 @@
     }
 
     async function loadDashboard() {
-      const res = await fetch(API + '/documents/list');
+      const res = await apiFetch(API + '/documents/list');
       const data = await res.json();
       const el = document.getElementById('dashboard-files');
       document.getElementById('stat-docs').textContent = data.files ? data.files.length : 0;
@@ -873,7 +1034,7 @@
       const zone = document.getElementById('upload-zone');
       zone.innerHTML = '<div class="upload-icon"><span class="spinner"></span></div><div>Uploading...</div>';
       try {
-        const res = await fetch(API + '/documents/upload', { method: 'POST', body: formData });
+        const res = await apiFetch(API + '/documents/upload', { method: 'POST', body: formData });
         const data = await res.json();
         if (res.ok) {
           showAlert('doc-alert', data.message, 'success');
@@ -890,7 +1051,7 @@
 
     async function deleteFile(filename) {
       if (!confirm('Delete ' + filename + '?')) return;
-      const res = await fetch(API + '/documents/delete/' + encodeURIComponent(filename), { method: 'DELETE' });
+      const res = await apiFetch(API + '/documents/delete/' + encodeURIComponent(filename), { method: 'DELETE' });
       const data = await res.json();
       if (res.ok) {
         showAlert('doc-alert', data.message, 'success');
@@ -909,7 +1070,7 @@
       const resultEl = document.getElementById('extraction-result');
       resultEl.innerHTML = '<div class="empty-state"><span class="spinner"></span> Running extraction...</div>';
       try {
-        const res = await fetch(API + '/extract/clinical', {
+        const res = await apiFetch(API + '/extract/clinical', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ note })
@@ -945,7 +1106,7 @@
     }
 
     async function loadDocSelect() {
-      const res = await fetch(API + '/documents/list');
+      const res = await apiFetch(API + '/documents/list');
       const data = await res.json();
       const sel = document.getElementById('rag-doc-select');
       sel.innerHTML = '<option value="">-- choose a document --</option>';
@@ -980,7 +1141,7 @@
       btn.innerHTML = '<span class="spinner"></span>Ingesting...';
       showAlert('rag-alert', 'Ingesting document — this may take a minute...', 'success');
       try {
-        const res = await fetch(API + '/rag/ingest', {
+        const res = await apiFetch(API + '/rag/ingest', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ filename })
@@ -1015,7 +1176,7 @@
       stats.queries++;
       document.getElementById('stat-queries').textContent = stats.queries;
       try {
-        const res = await fetch(API + '/rag/chat', {
+        const res = await apiFetch(API + '/rag/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ filename, question })
@@ -1026,13 +1187,8 @@
           const sourcesHtml = data.sources && data.sources.length > 0
             ? `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
             <div style="font-size:10px;color:var(--muted);margin-bottom:4px">sources</div>
-            ${data.sources.map(s => `
-              <div style="font-size:10px;color:var(--teal)">
-                📄 ${s.file} — [${s.section}]
-              </div>
-            `).join('')}
-           </div>`
-            : '';
+            ${data.sources.map(s => `<div style="font-size:10px;color:var(--teal)">📄 ${s.file} — [${s.section}]</div>`).join('')}
+           </div>` : '';
           messages.innerHTML += `<div class="msg ai"><div class="msg-label">mediflow ai</div>${data.answer}${sourcesHtml}</div>`;
         } else {
           messages.innerHTML += `<div class="msg ai" style="color:var(--danger)"><div class="msg-label">error</div>${data.detail}</div>`;
@@ -1053,7 +1209,7 @@
       const resultEl = document.getElementById('summary-result');
       resultEl.innerHTML = '<div class="empty-state"><span class="spinner"></span> Generating summary...</div>';
       try {
-        const res = await fetch(API + '/summarize/document', {
+        const res = await apiFetch(API + '/summarize/document', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ filename })
@@ -1074,7 +1230,7 @@
     }
 
     function loadSumDocSelect() {
-      fetch(API + '/documents/list').then(r => r.json()).then(data => {
+      apiFetch(API + '/documents/list').then(r => r.json()).then(data => {
         const sel = document.getElementById('sum-doc-select');
         sel.innerHTML = '<option value="">-- choose a document --</option>';
         if (data.files) data.files.forEach(f => {
@@ -1084,6 +1240,7 @@
         });
       });
     }
+
     function switchHistoryTab(tab) {
       document.getElementById('history-extraction').style.display = tab === 'extraction' ? 'block' : 'none';
       document.getElementById('history-chat').style.display = tab === 'chat' ? 'block' : 'none';
@@ -1102,12 +1259,9 @@
     async function loadExtractionHistory() {
       const el = document.getElementById('extraction-history-list');
       try {
-        const res = await fetch(API + '/extract/history');
+        const res = await apiFetch(API + '/extract/history');
         const data = await res.json();
-        if (data.length === 0) {
-          el.innerHTML = '<div class="empty-state">No extractions yet.</div>';
-          return;
-        }
+        if (data.length === 0) { el.innerHTML = '<div class="empty-state">No extractions yet.</div>'; return; }
         el.innerHTML = data.map(r => `
       <div class="card" style="margin-bottom:10px">
         <div style="display:flex;justify-content:space-between;margin-bottom:8px">
@@ -1125,20 +1279,15 @@
         </div>
       </div>
     `).join('');
-      } catch (e) {
-        el.innerHTML = '<div class="empty-state">Failed to load extraction history.</div>';
-      }
+      } catch (e) { el.innerHTML = '<div class="empty-state">Failed to load extraction history.</div>'; }
     }
 
     async function loadChatHistory() {
       const el = document.getElementById('chat-history-list');
       try {
-        const res = await fetch(API + '/rag/history');
+        const res = await apiFetch(API + '/rag/history');
         const data = await res.json();
-        if (data.length === 0) {
-          el.innerHTML = '<div class="empty-state">No chats yet.</div>';
-          return;
-        }
+        if (data.length === 0) { el.innerHTML = '<div class="empty-state">No chats yet.</div>'; return; }
         el.innerHTML = data.map(r => `
       <div class="card" style="margin-bottom:10px">
         <div style="display:flex;justify-content:space-between;margin-bottom:8px">
@@ -1155,20 +1304,15 @@
         </div>
       </div>
     `).join('');
-      } catch (e) {
-        el.innerHTML = '<div class="empty-state">Failed to load chat history.</div>';
-      }
+      } catch (e) { el.innerHTML = '<div class="empty-state">Failed to load chat history.</div>'; }
     }
 
     async function loadSummaryHistory() {
       const el = document.getElementById('summary-history-list');
       try {
-        const res = await fetch(API + '/summarize/history');
+        const res = await apiFetch(API + '/summarize/history');
         const data = await res.json();
-        if (data.length === 0) {
-          el.innerHTML = '<div class="empty-state">No summaries yet.</div>';
-          return;
-        }
+        if (data.length === 0) { el.innerHTML = '<div class="empty-state">No summaries yet.</div>'; return; }
         el.innerHTML = data.map(r => `
       <div class="card" style="margin-bottom:10px">
         <div style="display:flex;justify-content:space-between;margin-bottom:8px">
@@ -1180,10 +1324,9 @@
         </div>
       </div>
     `).join('');
-      } catch (e) {
-        el.innerHTML = '<div class="empty-state">Failed to load summary history.</div>';
-      }
+      } catch (e) { el.innerHTML = '<div class="empty-state">Failed to load summary history.</div>'; }
     }
+
     async function runSearch() {
       const query = document.getElementById('search-input').value.trim();
       if (!query) { showAlert('search-alert', 'Please enter a search query.', 'error'); return; }
@@ -1193,7 +1336,7 @@
       const resultsEl = document.getElementById('search-results');
       resultsEl.innerHTML = '<div class="empty-state"><span class="spinner"></span> Searching across documents...</div>';
       try {
-        const res = await fetch(API + '/search/query', {
+        const res = await apiFetch(API + '/search/query', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ query, top_k: 5 })
@@ -1213,9 +1356,7 @@
               </div>
               <span style="font-size:10px;color:var(--muted)">score: ${r.score}</span>
             </div>
-            <div style="font-size:12px;color:var(--text);line-height:1.8;padding:8px 10px;background:var(--surface2);border-radius:4px">
-              ${r.content}
-            </div>
+            <div style="font-size:12px;color:var(--text);line-height:1.8;padding:8px 10px;background:var(--surface2);border-radius:4px">${r.content}</div>
           </div>
         `).join('');
           }
@@ -1229,16 +1370,14 @@
       btn.disabled = false;
       btn.textContent = 'Search';
     }
+
     async function loadPatients() {
-      const res = await fetch(API + '/patients/list');
+      const res = await apiFetch(API + '/patients/list');
       const data = await res.json();
       const el = document.getElementById('patient-list');
       const linkSel = document.getElementById('link-patient-select');
       linkSel.innerHTML = '<option value="">-- select patient --</option>';
-      if (data.length === 0) {
-        el.innerHTML = '<div class="empty-state">No patients yet.</div>';
-        return;
-      }
+      if (data.length === 0) { el.innerHTML = '<div class="empty-state">No patients yet.</div>'; return; }
       data.forEach(p => {
         const opt = document.createElement('option');
         opt.value = p.id; opt.textContent = p.name;
@@ -1253,12 +1392,10 @@
         <div style="font-size:12px;color:var(--text)">${p.name}</div>
         <div style="font-size:10px;color:var(--muted)">${p.age ? p.age + ' yrs' : ''} ${p.gender ? '· ' + p.gender : ''}</div>
       </div>
-      <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deletePatient(${p.id}, '${p.name}')">Delete</button>
+      <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deletePatient(${p.id},'${p.name}')">Delete</button>
     </div>
   `).join('');
-
-      // Load docs for link select
-      const docRes = await fetch(API + '/documents/list');
+      const docRes = await apiFetch(API + '/documents/list');
       const docData = await docRes.json();
       const docSel = document.getElementById('link-doc-select');
       docSel.innerHTML = '<option value="">-- select document --</option>';
@@ -1275,7 +1412,7 @@
       const gender = document.getElementById('patient-gender').value;
       const notes = document.getElementById('patient-notes').value.trim();
       if (!name) { showAlert('patients-alert', 'Name is required.', 'error'); return; }
-      const res = await fetch(API + '/patients/create', {
+      const res = await apiFetch(API + '/patients/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, age: age ? parseInt(age) : null, gender: gender || null, notes: notes || null })
@@ -1297,7 +1434,7 @@
       const patient_id = document.getElementById('link-patient-select').value;
       const filename = document.getElementById('link-doc-select').value;
       if (!patient_id || !filename) { showAlert('patients-alert', 'Select both a patient and a document.', 'error'); return; }
-      const res = await fetch(API + '/patients/link-document', {
+      const res = await apiFetch(API + '/patients/link-document', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ patient_id: parseInt(patient_id), filename })
@@ -1311,7 +1448,7 @@
     }
 
     async function viewPatient(id) {
-      const res = await fetch(API + '/patients/' + id);
+      const res = await apiFetch(API + '/patients/' + id);
       const p = await res.json();
       const detailEl = document.getElementById('patient-detail');
       const contentEl = document.getElementById('patient-detail-content');
@@ -1335,8 +1472,7 @@
           <div class="file-item">
             <span class="file-badge ${getBadgeClass(f)}">${f.split('.').pop()}</span>
             <span class="file-name">${f}</span>
-          </div>`).join('')
-        }
+          </div>`).join('')}
     </div>
     <div class="card-title">extractions (${p.extractions.length})</div>
     ${p.extractions.length === 0
@@ -1348,15 +1484,14 @@
             ${(r.result.diagnosis || []).map(d => `<span class="tag">${d}</span>`).join('')}
             ${(r.result.medications || []).map(m => `<span class="tag" style="color:var(--warn);border-color:var(--warn)">${m}</span>`).join('')}
           </div>
-        </div>`).join('')
-        }
+        </div>`).join('')}
   `;
       detailEl.scrollIntoView({ behavior: 'smooth' });
     }
 
     async function deletePatient(id, name) {
       if (!confirm('Delete patient ' + name + '?')) return;
-      const res = await fetch(API + '/patients/' + id, { method: 'DELETE' });
+      const res = await apiFetch(API + '/patients/' + id, { method: 'DELETE' });
       const data = await res.json();
       if (res.ok) {
         showAlert('patients-alert', data.message, 'success');
@@ -1364,9 +1499,25 @@
         loadPatients();
       }
     }
-    function exportCSV(type) {
-      window.open(API + '/export/' + type, '_blank');
+
+    async function exportCSV(type) {
+      try {
+        const res = await apiFetch(API + '/export/' + type);
+        if (!res.ok) { showAlert('history-alert', 'Export failed. Check your permissions.', 'error'); return; }
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = type + '.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      } catch (e) {
+        console.error('Export failed:', e);
+      }
     }
+
     async function checkHealth() {
       try {
         const res = await fetch(API + '/health');
@@ -1387,10 +1538,83 @@
       }
     }
 
-    // Check health on load and every 30 seconds
-    checkHealth();
-    setInterval(checkHealth, 30000);
-    loadDashboard();
+    // User management (admin only)
+    async function loadUsers() {
+      const el = document.getElementById('users-list');
+      try {
+        const res = await apiFetch(API + '/auth/users');
+        const data = await res.json();
+        if (data.length === 0) { el.innerHTML = '<div class="empty-state">No users found.</div>'; return; }
+        const roleColors = { admin: 'var(--danger)', doctor: 'var(--teal)', nurse: 'var(--warn)' };
+        el.innerHTML = data.map(u => `
+      <div class="file-item" style="margin-bottom:6px">
+        <div style="width:32px;height:32px;border-radius:50%;background:rgba(0,201,167,0.1);border:1px solid rgba(0,201,167,0.2);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--teal);flex-shrink:0">
+          ${(u.full_name || u.username).split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+        </div>
+        <div style="flex:1">
+          <div style="font-size:12px;color:${u.is_active ? 'var(--text)' : 'var(--muted)'}">${u.full_name || u.username}</div>
+          <div style="font-size:10px;color:var(--muted)">@${u.username} · <span style="color:${roleColors[u.role]}">${u.role}</span></div>
+        </div>
+        ${u.username !== currentUser.username ? `
+          <button class="btn btn-sm ${u.is_active ? 'btn-danger' : 'btn-outline'}" onclick="${u.is_active ? 'deactivateUser' : 'activateUser'}(${u.id},'${u.username}')">
+            ${u.is_active ? 'Deactivate' : 'Activate'}
+          </button>
+        ` : '<span style="font-size:10px;color:var(--muted)">you</span>'}
+      </div>
+    `).join('');
+      } catch (e) { el.innerHTML = '<div class="empty-state">Failed to load users.</div>'; }
+    }
+
+    async function createUser() {
+      const username = document.getElementById('new-username').value.trim();
+      const password = document.getElementById('new-password').value.trim();
+      const full_name = document.getElementById('new-fullname').value.trim();
+      const role = document.getElementById('new-role').value;
+      if (!username || !password) { showAlert('users-alert', 'Username and password required.', 'error'); return; }
+      const res = await apiFetch(API + '/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password, full_name, role })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showAlert('users-alert', data.message, 'success');
+        document.getElementById('new-username').value = '';
+        document.getElementById('new-password').value = '';
+        document.getElementById('new-fullname').value = '';
+        loadUsers();
+      } else {
+        showAlert('users-alert', data.detail || 'Failed to create user.', 'error');
+      }
+    }
+
+    async function deactivateUser(id, username) {
+      if (!confirm('Deactivate ' + username + '?')) return;
+      const res = await apiFetch(API + '/auth/users/' + id + '/deactivate', { method: 'PUT' });
+      const data = await res.json();
+      if (res.ok) { showAlert('users-alert', data.message, 'success'); loadUsers(); }
+      else { showAlert('users-alert', data.detail, 'error'); }
+    }
+
+    async function activateUser(id, username) {
+      const res = await apiFetch(API + '/auth/users/' + id + '/activate', { method: 'PUT' });
+      const data = await res.json();
+      if (res.ok) { showAlert('users-alert', data.message, 'success'); loadUsers(); }
+      else { showAlert('users-alert', data.detail, 'error'); }
+    }
+
+    // Init
+    if (authToken && currentUser) {
+      document.getElementById('login-page').style.display = 'none';
+      document.getElementById('app').style.display = 'grid';
+      applyRoleUI();
+      loadDashboard();
+      checkHealth();
+      setInterval(checkHealth, 30000);
+    } else {
+      document.getElementById('login-page').style.display = 'flex';
+      document.getElementById('app').style.display = 'none';
+    }
   </script>
 </body>
 
