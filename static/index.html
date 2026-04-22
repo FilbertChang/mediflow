@@ -1092,6 +1092,16 @@
       btn.textContent = 'Extract Clinical Data';
     }
 
+    function sanitize(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#x27;');
+    }
+
     function renderExtraction(data) {
       if (data.error) return `<div style="color:var(--danger);font-size:12px">${data.error}<br><small style="color:var(--muted)">${data.raw || ''}</small></div>`;
       const renderVal = (val) => {
@@ -1169,8 +1179,8 @@
       if (!question) return;
       const messages = document.getElementById('chat-messages');
       messages.innerHTML = messages.innerHTML.replace('<div class="empty-state">Ingest a document then ask a question.</div>', '');
-      messages.innerHTML += `<div class="msg user"><div class="msg-label">you</div>${question}</div>`;
-      messages.innerHTML += `<div class="msg ai" id="thinking"><div class="msg-label">mediflow ai</div><span class="spinner"></span> Thinking...</div>`;
+      messages.innerHTML += `<div class="msg user"><div class="msg-label">you</div>${sanitize(question)}</div>`;
+      messages.innerHTML += `<div class="msg ai"><div class="msg-label">mediflow ai</div>${sanitize(data.answer)}${sourcesHtml}</div>`;
       messages.scrollTop = messages.scrollHeight;
       document.getElementById('chat-input').value = '';
       stats.queries++;
