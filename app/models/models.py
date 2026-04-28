@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
 from sqlalchemy.sql import func
 from app.database import Base
 
@@ -64,4 +64,15 @@ class User(Base):
     full_name = Column(String, nullable=True)
     role = Column(String, default="staff")
     is_active = Column(Integer, default=1)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class Alert(Base):
+    __tablename__ = "alerts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    extraction_id = Column(Integer, nullable=False)
+    severity = Column(String, nullable=False)
+    alert_type = Column(String, nullable=False)
+    message = Column(Text, nullable=False)
+    is_read = Column(Integer, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

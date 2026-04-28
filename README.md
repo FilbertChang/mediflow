@@ -15,7 +15,8 @@ A production-ready local healthcare AI platform built with FastAPI, LangChain, a
 | 👤 Patient Profiles | Group documents and extractions by patient |
 | 📊 CSV Export | Export extraction, chat, and summary history to CSV |
 | 📈 Analytics Dashboard | Visualize top diagnoses, medications, ICD-10 codes, and extraction volume over time |
-| 🗄️ PostgreSQL | Persistent storage for all history and patient records |
+| 🚨 Proactive Alerting | Auto-detect drug interactions, high-risk ICD-10 codes, dangerous medications, and missing fields after every extraction — with email and Slack notifications |
+| 🗄️ PostgreSQL | Persistent storage for all history, patient records, and alerts |
 | 📡 LangSmith | Trace every LLM call across all pipelines |
 | 🏥 Health Check | Monitor database, Ollama, and storage status in real time |
 | 🐳 Docker | One-command deployment with Docker Compose |
@@ -33,6 +34,7 @@ A production-ready local healthcare AI platform built with FastAPI, LangChain, a
 | Chunking | Section-aware + SemanticChunker fallback |
 | Database | PostgreSQL, SQLAlchemy |
 | Observability | LangSmith |
+| Notifications | SendGrid (email), Slack Webhooks (optional) |
 | Frontend | HTML, CSS, JavaScript, Chart.js |
 | DevOps | Docker, Docker Compose |
 
@@ -53,11 +55,22 @@ pip install -r requirements.txt
 Create a `.env` file in the root directory:
 ```
 DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@localhost:5432/mediflow
+POSTGRES_PASSWORD=YOUR_PASSWORD
+SECRET_KEY=<32-byte hex string from secrets.token_hex(32)>
+ACCESS_TOKEN_EXPIRE_MINUTES=480
 LANGCHAIN_TRACING_V2=true
+LANGCHAIN_ENDPOINT=https://api.smith.langchain.com
 LANGCHAIN_API_KEY=your_langsmith_key
 LANGCHAIN_PROJECT=mediflow
 OLLAMA_BASE_URL=http://localhost:11434
-POSTGRES_PASSWORD=YOUR_PASSWORD
+
+# Alerting (required for email notifications)
+SENDGRID_API_KEY=your_sendgrid_api_key
+ALERT_EMAIL_FROM=mediflow@yourdomain.com
+ALERT_EMAIL_TO=doctor@hospital.com
+
+# Alerting (optional — only if using Slack)
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/xxx
 ```
 
 Then run:
@@ -82,6 +95,25 @@ Open **http://localhost:8000**
 - Ollama with Llama 3.2 — `ollama pull llama3.2`
 - PostgreSQL (or Docker — PostgreSQL is included automatically)
 - LangSmith account (free) — https://smith.langchain.com
+- SendGrid account (free tier) — https://sendgrid.com
+
+## Alert System
+
+MediFlow automatically analyzes every extraction result through a multi-layer detection pipeline:
+
+| Check | Method | Severity |
+|---|---|---|
+| Missing critical fields (diagnosis, medications, patient name) | Rule-based | Warning |
+| High-risk ICD-10 codes (MI, sepsis, stroke, PE, etc.) | Hardcoded list (~25 codes) | Critical |
+| Narrow therapeutic index medications (Warfarin, Digoxin, Lithium, etc.) | Hardcoded list | Warning |
+| Known drug-drug interactions (30+ pairs) | Hardcoded ruleset | Critical |
+| Unknown drug-drug interactions | Llama 3.2 LLM fallback | Critical |
+
+When alerts are detected:
+- User is automatically navigated to the **Alerts page**
+- Unread badge appears on the sidebar nav item
+- Email digest sent via SendGrid
+- Slack message posted (if `SLACK_WEBHOOK_URL` is configured)
 
 ## Security
 
@@ -114,6 +146,8 @@ Open **http://localhost:8000**
 | Export CSV | ✅ | ✅ | ❌ |
 | View history | ✅ | ✅ | ❌ |
 | Analytics dashboard | ✅ | ✅ | ✅ |
+| View alerts | ✅ | ✅ | ✅ |
+| Delete alerts | ✅ | ✅ | ❌ |
 
 ## API Endpoints
 
@@ -124,7 +158,7 @@ Open **http://localhost:8000**
 | POST | `/documents/upload` | Upload a document |
 | GET | `/documents/list` | List uploaded documents |
 | DELETE | `/documents/delete/{filename}` | Delete a document |
-| POST | `/extract/clinical` | Extract EHR fields from doctor notes |
+| POST | `/extract/clinical` | Extract EHR fields and run alert analysis |
 | GET | `/extract/history` | Get extraction history |
 | POST | `/rag/ingest` | Ingest document into vector store |
 | POST | `/rag/chat` | Ask questions about a document |
@@ -144,6 +178,11 @@ Open **http://localhost:8000**
 | GET | `/analytics/top-medications` | Top 10 most common medications |
 | GET | `/analytics/top-icd10` | Top 10 most frequent ICD-10 codes |
 | GET | `/analytics/extraction-volume` | Extraction count grouped by date |
+| GET | `/alerts/list` | List all alerts |
+| GET | `/alerts/unread-count` | Get unread alert badge count |
+| PATCH | `/alerts/{id}/read` | Mark alert as read |
+| PATCH | `/alerts/mark-all-read` | Mark all alerts as read |
+| DELETE | `/alerts/{id}` | Delete an alert |
 | POST | `/auth/register` | Create a new user (admin only) |
 | POST | `/auth/login` | Login and receive JWT token |
 | GET | `/auth/me` | Get current user info |
@@ -156,9 +195,10 @@ Open **http://localhost:8000**
 mediflow/
 ├── app/
 │   ├── routers/
+│   │   ├── alerts.py          # Clinical alert endpoints
 │   │   ├── analytics.py       # Analytics dashboard endpoints
 │   │   ├── documents.py       # File upload and management
-│   │   ├── extraction.py      # Clinical NLP extraction
+│   │   ├── extraction.py      # Clinical NLP extraction + alert trigger
 │   │   ├── rag.py             # RAG chat endpoints
 │   │   ├── summarization.py   # Auto summarization
 │   │   ├── search.py          # Semantic search
@@ -168,6 +208,8 @@ mediflow/
 │   │   └── auth.py            # JWT authentication & user management
 │   ├── auth.py                # JWT logic, password hashing, role checkers
 │   ├── services/
+│   │   ├── alert_engine.py    # Multi-layer clinical alert detection
+│   │   ├── notifier.py        # SendGrid email + Slack dispatcher
 │   │   ├── extractor.py       # LangChain extraction logic
 │   │   ├── rag.py             # RAG + section-aware chunking
 │   │   ├── summarizer.py      # Summarization logic
@@ -177,7 +219,7 @@ mediflow/
 │   ├── database.py            # PostgreSQL connection
 │   └── main.py                # FastAPI app entry point
 ├── static/
-│   └── index.html             # Frontend dashboard (Chart.js for analytics)
+│   └── index.html             # Frontend (Chart.js, alert badge, alerts page)
 ├── uploads/                   # Uploaded documents
 ├── vectorstore/               # FAISS embeddings
 ├── Dockerfile

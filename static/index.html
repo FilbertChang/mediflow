@@ -480,6 +480,85 @@
     .select-doc {
       margin-bottom: 12px
     }
+
+    .alert-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      border-left: 3px solid var(--border);
+      transition: opacity 0.2s
+    }
+
+    .alert-card.critical {
+      border-left-color: var(--danger)
+    }
+
+    .alert-card.warning {
+      border-left-color: var(--warn)
+    }
+
+    .alert-card.info {
+      border-left-color: var(--teal)
+    }
+
+    .alert-card.is-read {
+      opacity: 0.5
+    }
+
+    .severity-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px
+    }
+
+    .severity-badge.critical {
+      background: rgba(255, 107, 107, 0.15);
+      color: var(--danger)
+    }
+
+    .severity-badge.warning {
+      background: rgba(240, 165, 0, 0.15);
+      color: var(--warn)
+    }
+
+    .severity-badge.info {
+      background: rgba(0, 201, 167, 0.12);
+      color: var(--teal)
+    }
+
+    .alert-type-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-size: 10px;
+      background: var(--surface2);
+      color: var(--muted);
+      margin-left: 6px
+    }
+
+    .filter-btn {
+      padding: 5px 12px;
+      font-size: 11px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      cursor: pointer;
+      transition: all 0.15s
+    }
+
+    .filter-btn.active {
+      background: var(--surface2);
+      color: var(--text);
+      border-color: var(--teal-dim)
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
@@ -551,6 +630,15 @@
             <path d="M5 8h6M8 5l3 3-3 3" />
           </svg>
           Extraction
+        </div>
+        <div class="nav-item" id="nav-alerts" onclick="navigate('alerts')">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M8 1a5 5 0 015 5c0 3 1 4 1.5 5h-13C2 10 3 9 3 6a5 5 0 015-5z" />
+            <path d="M6.5 13a1.5 1.5 0 003 0" />
+          </svg>
+          Alerts
+          <span id="alert-badge"
+            style="display:none;margin-left:auto;background:var(--danger);color:#fff;font-size:9px;font-weight:600;padding:1px 6px;border-radius:10px;min-width:16px;text-align:center"></span>
         </div>
         <div class="nav-item" onclick="navigate('ragchat')">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -872,6 +960,26 @@
           </div>
         </div>
 
+        <!-- ALERTS PAGE -->
+        <div class="page" id="page-alerts">
+          <div class="page-title">Clinical Alerts</div>
+          <div class="page-sub">Proactive warnings from extraction analysis</div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:gap">
+            <div style="display:flex;gap:6px">
+              <button class="filter-btn active" id="filter-all" onclick="setAlertFilter('all')">All</button>
+              <button class="filter-btn" id="filter-critical" onclick="setAlertFilter('critical')">🚨 Critical</button>
+              <button class="filter-btn" id="filter-warning" onclick="setAlertFilter('warning')">⚠️ Warning</button>
+              <button class="filter-btn" id="filter-unread" onclick="setAlertFilter('unread')">Unread</button>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="markAllAlertsRead()">✓ Mark all read</button>
+          </div>
+
+          <div id="alerts-list">
+            <div class="empty-state">Loading alerts...</div>
+          </div>
+        </div>
+
         <!-- PATIENTS PAGE -->
         <div class="page" id="page-patients">
           <div class="page-title">Patient Profiles</div>
@@ -1005,6 +1113,8 @@
           loadDashboard();
           checkHealth();
           setInterval(checkHealth, 30000);
+          updateAlertBadge();
+          setInterval(updateAlertBadge, 30000);
         } else {
           document.getElementById('login-error').textContent = data.detail || 'Invalid credentials.';
           document.getElementById('login-error').style.display = 'block';
@@ -1031,6 +1141,7 @@
       if (page === 'patients') loadPatients();
       if (page === 'users') loadUsers();
       if (page === 'analytics') loadAnalytics();
+      if (page === 'alerts') loadAlerts();
     }
 
     function showAlert(id, msg, type) {
@@ -1139,7 +1250,20 @@
           stats.extractions++;
           document.getElementById('stat-extractions').textContent = stats.extractions;
           resultEl.innerHTML = renderExtraction(data);
-          showAlert('ext-alert', 'Extraction complete!', 'success');
+          // Auto-navigate to Alerts if any alert was generated
+          if (data.alert_count && data.alert_count > 0) {
+            showAlert('ext-alert', `Extraction complete — ${data.alert_count} alert(s) detected!`, 'error');
+            updateAlertBadge();
+            setTimeout(() => {
+              document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+              document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+              document.getElementById('page-alerts').classList.add('active');
+              document.getElementById('nav-alerts').classList.add('active');
+              loadAlerts();
+            }, 1500);
+          } else {
+            showAlert('ext-alert', 'Extraction complete. No clinical alerts.', 'success');
+          }
         } else {
           showAlert('ext-alert', data.detail || 'Extraction failed.', 'error');
           resultEl.innerHTML = '<div class="empty-state">Extraction failed.</div>';
@@ -1672,6 +1796,110 @@
       else { showAlert('users-alert', data.detail, 'error'); }
     }
 
+    // ── Alerts ─────────────────────────────────────────────────
+    let _alertFilter = 'all';
+    let _allAlerts = [];
+
+    function setAlertFilter(filter) {
+      _alertFilter = filter;
+      ['all', 'critical', 'warning', 'unread'].forEach(f => {
+        document.getElementById('filter-' + f).classList.toggle('active', f === filter);
+      });
+      renderAlertsList();
+    }
+
+    function renderAlertsList() {
+      const el = document.getElementById('alerts-list');
+      let filtered = _allAlerts;
+      if (_alertFilter === 'critical') filtered = _allAlerts.filter(a => a.severity === 'critical');
+      if (_alertFilter === 'warning') filtered = _allAlerts.filter(a => a.severity === 'warning');
+      if (_alertFilter === 'unread') filtered = _allAlerts.filter(a => !a.is_read);
+
+      if (filtered.length === 0) {
+        el.innerHTML = '<div class="empty-state">No alerts found.</div>';
+        return;
+      }
+
+      const typeLabels = {
+        drug_interaction: '💊 Drug Interaction',
+        high_risk_icd10: '🏥 High-Risk ICD-10',
+        dangerous_dosage: '⚗️ Dangerous Medication',
+        missing_fields: '📋 Missing Fields',
+      };
+
+      el.innerHTML = filtered.map(a => `
+        <div class="alert-card ${a.severity} ${a.is_read ? 'is-read' : ''}" id="alert-card-${a.id}">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <div style="display:flex;align-items:center;gap:6px">
+              <span class="severity-badge ${a.severity}">${a.severity}</span>
+              <span class="alert-type-badge">${typeLabels[a.alert_type] || a.alert_type}</span>
+              ${!a.is_read ? '<span style="width:6px;height:6px;border-radius:50%;background:var(--danger);display:inline-block"></span>' : ''}
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:10px;color:var(--muted)">Extraction #${a.extraction_id} · ${new Date(a.created_at).toLocaleString()}</span>
+              ${!a.is_read ? `<button class="btn btn-outline btn-sm" onclick="markAlertRead(${a.id})">Mark read</button>` : ''}
+              <button class="btn btn-danger btn-sm" onclick="deleteAlertItem(${a.id})">Delete</button>
+            </div>
+          </div>
+          <div style="font-size:12px;color:var(--text);line-height:1.7">${sanitize(a.message)}</div>
+        </div>
+      `).join('');
+    }
+
+    async function loadAlerts() {
+      const el = document.getElementById('alerts-list');
+      el.innerHTML = '<div class="empty-state"><span class="spinner"></span> Loading...</div>';
+      try {
+        const res = await apiFetch(API + '/alerts/list');
+        if (res.ok) {
+          _allAlerts = await res.json();
+          renderAlertsList();
+          updateAlertBadge();
+        }
+      } catch (e) {
+        el.innerHTML = '<div class="empty-state">Failed to load alerts.</div>';
+      }
+    }
+
+    async function updateAlertBadge() {
+      try {
+        const res = await apiFetch(API + '/alerts/unread-count');
+        if (res.ok) {
+          const data = await res.json();
+          const badge = document.getElementById('alert-badge');
+          if (data.unread > 0) {
+            badge.textContent = data.unread;
+            badge.style.display = 'inline-block';
+          } else {
+            badge.style.display = 'none';
+          }
+        }
+      } catch (e) { }
+    }
+
+    async function markAlertRead(id) {
+      await apiFetch(API + '/alerts/' + id + '/read', { method: 'PATCH' });
+      const alert = _allAlerts.find(a => a.id === id);
+      if (alert) alert.is_read = 1;
+      renderAlertsList();
+      updateAlertBadge();
+    }
+
+    async function markAllAlertsRead() {
+      await apiFetch(API + '/alerts/mark-all-read', { method: 'PATCH' });
+      _allAlerts.forEach(a => a.is_read = 1);
+      renderAlertsList();
+      updateAlertBadge();
+    }
+
+    async function deleteAlertItem(id) {
+      await apiFetch(API + '/alerts/' + id, { method: 'DELETE' });
+      _allAlerts = _allAlerts.filter(a => a.id !== id);
+      renderAlertsList();
+      updateAlertBadge();
+    }
+    // ── End Alerts ──────────────────────────────────────────────
+
     // ── Analytics ──────────────────────────────────────────────
     let _anCharts = {};
 
@@ -1802,6 +2030,8 @@
       loadDashboard();
       checkHealth();
       setInterval(checkHealth, 30000);
+      updateAlertBadge();
+      setInterval(updateAlertBadge, 30000);
     } else {
       document.getElementById('login-page').style.display = 'flex';
       document.getElementById('app').style.display = 'none';
