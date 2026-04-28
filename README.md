@@ -14,6 +14,7 @@ A production-ready local healthcare AI platform built with FastAPI, LangChain, a
 | 🔍 Semantic Search | Search across all ingested documents by meaning, not just keywords |
 | 👤 Patient Profiles | Group documents and extractions by patient |
 | 📊 CSV Export | Export extraction, chat, and summary history to CSV |
+| 📈 Analytics Dashboard | Visualize top diagnoses, medications, ICD-10 codes, and extraction volume over time |
 | 🗄️ PostgreSQL | Persistent storage for all history and patient records |
 | 📡 LangSmith | Trace every LLM call across all pipelines |
 | 🏥 Health Check | Monitor database, Ollama, and storage status in real time |
@@ -32,7 +33,7 @@ A production-ready local healthcare AI platform built with FastAPI, LangChain, a
 | Chunking | Section-aware + SemanticChunker fallback |
 | Database | PostgreSQL, SQLAlchemy |
 | Observability | LangSmith |
-| Frontend | HTML, CSS, JavaScript |
+| Frontend | HTML, CSS, JavaScript, Chart.js |
 | DevOps | Docker, Docker Compose |
 
 ## Quick Start
@@ -50,12 +51,14 @@ pip install -r requirements.txt
 ```
 
 Create a `.env` file in the root directory:
+```
 DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@localhost:5432/mediflow
 LANGCHAIN_TRACING_V2=true
 LANGCHAIN_API_KEY=your_langsmith_key
 LANGCHAIN_PROJECT=mediflow
 OLLAMA_BASE_URL=http://localhost:11434
 POSTGRES_PASSWORD=YOUR_PASSWORD
+```
 
 Then run:
 ```bash
@@ -95,7 +98,6 @@ Open **http://localhost:8000**
 | File validation | MIME type checking via magic bytes (not just extension) |
 | SQL injection | SQLAlchemy ORM parameterized queries + filename validation |
 | Rate limiting | 10 req/min on AI endpoints, 20 req/min on ingestion (slowapi) |
-| Path traversal | Filename validation on all vectorstore and file system operations |
 
 ### Role Permissions
 
@@ -111,6 +113,7 @@ Open **http://localhost:8000**
 | Patient profiles | ✅ | ✅ | ✅ |
 | Export CSV | ✅ | ✅ | ❌ |
 | View history | ✅ | ✅ | ❌ |
+| Analytics dashboard | ✅ | ✅ | ✅ |
 
 ## API Endpoints
 
@@ -136,6 +139,11 @@ Open **http://localhost:8000**
 | GET | `/export/extractions` | Export extractions as CSV |
 | GET | `/export/chats` | Export chat history as CSV |
 | GET | `/export/summaries` | Export summaries as CSV |
+| GET | `/analytics/summary` | Get high-level extraction stats |
+| GET | `/analytics/top-diagnoses` | Top 10 most common diagnoses |
+| GET | `/analytics/top-medications` | Top 10 most common medications |
+| GET | `/analytics/top-icd10` | Top 10 most frequent ICD-10 codes |
+| GET | `/analytics/extraction-volume` | Extraction count grouped by date |
 | POST | `/auth/register` | Create a new user (admin only) |
 | POST | `/auth/login` | Login and receive JWT token |
 | GET | `/auth/me` | Get current user info |
@@ -148,6 +156,7 @@ Open **http://localhost:8000**
 mediflow/
 ├── app/
 │   ├── routers/
+│   │   ├── analytics.py       # Analytics dashboard endpoints
 │   │   ├── documents.py       # File upload and management
 │   │   ├── extraction.py      # Clinical NLP extraction
 │   │   ├── rag.py             # RAG chat endpoints
@@ -155,7 +164,7 @@ mediflow/
 │   │   ├── search.py          # Semantic search
 │   │   ├── patients.py        # Patient profiles
 │   │   ├── export.py          # CSV export
-│   │   └── health.py          # Health check
+│   │   ├── health.py          # Health check
 │   │   └── auth.py            # JWT authentication & user management
 │   ├── auth.py                # JWT logic, password hashing, role checkers
 │   ├── services/
@@ -168,7 +177,7 @@ mediflow/
 │   ├── database.py            # PostgreSQL connection
 │   └── main.py                # FastAPI app entry point
 ├── static/
-│   └── index.html             # Frontend dashboard
+│   └── index.html             # Frontend dashboard (Chart.js for analytics)
 ├── uploads/                   # Uploaded documents
 ├── vectorstore/               # FAISS embeddings
 ├── Dockerfile

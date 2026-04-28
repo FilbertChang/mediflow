@@ -481,6 +481,7 @@
       margin-bottom: 12px
     }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 
 <body>
@@ -576,6 +577,12 @@
             <path d="M10 10l3 3" />
           </svg>
           Search
+        </div>
+        <div class="nav-item" onclick="navigate('analytics')">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M2 13V8h3v5H2zM6 13V5h3v8H6zM10 13V2h3v11h-3z" />
+          </svg>
+          Analytics
         </div>
         <div class="nav-section">records</div>
         <div class="nav-item" onclick="navigate('patients')">
@@ -814,6 +821,57 @@
           <div id="search-results"></div>
         </div>
 
+        <!-- ANALYTICS PAGE -->
+        <div class="page" id="page-analytics">
+          <div class="page-title">Analytics</div>
+          <div class="page-sub">Clinical insights from extraction history</div>
+          <div id="analytics-alert" class="alert"></div>
+
+          <!-- Stat cards -->
+          <div class="stats" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px" id="analytics-stats">
+            <div class="stat">
+              <div class="stat-label">total extractions</div>
+              <div class="stat-val" id="an-total">—</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">unique diagnoses</div>
+              <div class="stat-val" id="an-diagnoses">—</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">unique medications</div>
+              <div class="stat-val" id="an-meds">—</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">unique icd-10 codes</div>
+              <div class="stat-val" id="an-icd">—</div>
+            </div>
+          </div>
+
+          <!-- Row 1: bar charts -->
+          <div class="grid2" style="margin-bottom:16px">
+            <div class="card">
+              <div class="card-title">top 10 diagnoses</div>
+              <canvas id="chart-diagnoses" style="max-height:220px"></canvas>
+            </div>
+            <div class="card">
+              <div class="card-title">top 10 medications</div>
+              <canvas id="chart-medications" style="max-height:220px"></canvas>
+            </div>
+          </div>
+
+          <!-- Row 2: pie + line -->
+          <div class="grid2">
+            <div class="card">
+              <div class="card-title">icd-10 code distribution</div>
+              <canvas id="chart-icd10" style="max-height:220px"></canvas>
+            </div>
+            <div class="card">
+              <div class="card-title">extraction volume over time</div>
+              <canvas id="chart-volume" style="max-height:220px"></canvas>
+            </div>
+          </div>
+        </div>
+
         <!-- PATIENTS PAGE -->
         <div class="page" id="page-patients">
           <div class="page-title">Patient Profiles</div>
@@ -972,6 +1030,7 @@
       if (page === 'search') document.getElementById('search-input').focus();
       if (page === 'patients') loadPatients();
       if (page === 'users') loadUsers();
+      if (page === 'analytics') loadAnalytics();
     }
 
     function showAlert(id, msg, type) {
@@ -1612,6 +1671,128 @@
       if (res.ok) { showAlert('users-alert', data.message, 'success'); loadUsers(); }
       else { showAlert('users-alert', data.detail, 'error'); }
     }
+
+    // ── Analytics ──────────────────────────────────────────────
+    let _anCharts = {};
+
+    function _destroyChart(id) {
+      if (_anCharts[id]) { _anCharts[id].destroy(); delete _anCharts[id]; }
+    }
+
+    function _chartDefaults() {
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: '#5a7a9a', font: { family: 'DM Mono', size: 10 } }, grid: { color: '#1e2d42' } },
+          y: { ticks: { color: '#5a7a9a', font: { family: 'DM Mono', size: 10 } }, grid: { color: '#1e2d42' } }
+        }
+      };
+    }
+
+    async function loadAnalytics() {
+      // Summary cards
+      try {
+        const res = await apiFetch(API + '/analytics/summary');
+        if (res.ok) {
+          const d = await res.json();
+          document.getElementById('an-total').textContent = d.total_extractions;
+          document.getElementById('an-diagnoses').textContent = d.unique_diagnoses;
+          document.getElementById('an-meds').textContent = d.unique_medications;
+          document.getElementById('an-icd').textContent = d.unique_icd10_codes;
+        }
+      } catch (e) { }
+
+      // Top diagnoses bar chart
+      try {
+        const res = await apiFetch(API + '/analytics/top-diagnoses');
+        if (res.ok) {
+          const d = await res.json();
+          _destroyChart('diagnoses');
+          const ctx = document.getElementById('chart-diagnoses').getContext('2d');
+          _anCharts['diagnoses'] = new Chart(ctx, {
+            type: 'bar',
+            data: {
+              labels: d.labels,
+              datasets: [{ data: d.values, backgroundColor: 'rgba(0,201,167,0.6)', borderColor: '#00c9a7', borderWidth: 1, borderRadius: 3 }]
+            },
+            options: { ..._chartDefaults(), plugins: { legend: { display: false } } }
+          });
+        }
+      } catch (e) { }
+
+      // Top medications bar chart
+      try {
+        const res = await apiFetch(API + '/analytics/top-medications');
+        if (res.ok) {
+          const d = await res.json();
+          _destroyChart('medications');
+          const ctx = document.getElementById('chart-medications').getContext('2d');
+          _anCharts['medications'] = new Chart(ctx, {
+            type: 'bar',
+            data: {
+              labels: d.labels,
+              datasets: [{ data: d.values, backgroundColor: 'rgba(240,165,0,0.6)', borderColor: '#f0a500', borderWidth: 1, borderRadius: 3 }]
+            },
+            options: { ..._chartDefaults(), plugins: { legend: { display: false } } }
+          });
+        }
+      } catch (e) { }
+
+      // ICD-10 pie chart
+      try {
+        const res = await apiFetch(API + '/analytics/top-icd10');
+        if (res.ok) {
+          const d = await res.json();
+          _destroyChart('icd10');
+          const ctx = document.getElementById('chart-icd10').getContext('2d');
+          const palette = ['#00c9a7', '#f0a500', '#ff6b6b', '#389bfd', '#3fb950', '#a371f7', '#79c0ff', '#ffa657', '#ff7b72', '#56d364'];
+          _anCharts['icd10'] = new Chart(ctx, {
+            type: 'pie',
+            data: {
+              labels: d.labels,
+              datasets: [{ data: d.values, backgroundColor: palette.slice(0, d.labels.length), borderColor: '#111720', borderWidth: 2 }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: true, position: 'right', labels: { color: '#5a7a9a', font: { family: 'DM Mono', size: 10 }, boxWidth: 12 } }
+              }
+            }
+          });
+        }
+      } catch (e) { }
+
+      // Extraction volume line chart
+      try {
+        const res = await apiFetch(API + '/analytics/extraction-volume');
+        if (res.ok) {
+          const d = await res.json();
+          _destroyChart('volume');
+          const ctx = document.getElementById('chart-volume').getContext('2d');
+          _anCharts['volume'] = new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: d.labels,
+              datasets: [{
+                data: d.values,
+                borderColor: '#00c9a7',
+                backgroundColor: 'rgba(0,201,167,0.08)',
+                borderWidth: 2,
+                pointBackgroundColor: '#00c9a7',
+                pointRadius: 3,
+                fill: true,
+                tension: 0.3
+              }]
+            },
+            options: { ..._chartDefaults(), plugins: { legend: { display: false } } }
+          });
+        }
+      } catch (e) { }
+    }
+    // ── End Analytics ───────────────────────────────────────────
 
     // Init
     if (authToken && currentUser) {
