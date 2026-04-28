@@ -76,3 +76,41 @@ class Alert(Base):
     message = Column(Text, nullable=False)
     is_read = Column(Integer, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class PolicyDocument(Base):
+    __tablename__ = "policy_documents"
+
+    id = Column(Integer, primary_key=True, index=True)
+    filename = Column(String, nullable=False, unique=True)
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    chunk_count = Column(Integer, nullable=False, default=0)
+    char_count = Column(Integer, nullable=False, default=0)
+    uploaded_by = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class PolicyRule(Base):
+    __tablename__ = "policy_rules"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    condition = Column(Text, nullable=False)   # e.g. "Diagnosis: Pneumonia"
+    requirement = Column(Text, nullable=False)  # e.g. "Must prescribe Amoxicillin or Azithromycin"
+    severity = Column(String, default="warning")  # "critical" | "warning"
+    is_active = Column(Integer, default=1)
+    created_by = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class ComplianceHistory(Base):
+    __tablename__ = "compliance_history"
+
+    id = Column(Integer, primary_key=True, index=True)
+    extraction_id = Column(Integer, nullable=False)
+    status = Column(String, nullable=False)     # "compliant" | "deviation" | "unknown"
+    summary = Column(Text, nullable=False)       # AI narrative explanation
+    deviations_json = Column(Text, default="[]") # JSON list of specific deviations
+    rules_checked = Column(Integer, default=0)
+    policy_docs_used = Column(Text, default="[]") # JSON list of filenames queried
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

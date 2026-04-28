@@ -559,6 +559,53 @@
       color: var(--text);
       border-color: var(--teal-dim)
     }
+
+    .compliance-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px
+    }
+
+    .compliance-badge.compliant {
+      background: rgba(0, 201, 167, 0.15);
+      color: var(--teal)
+    }
+
+    .compliance-badge.deviation {
+      background: rgba(255, 107, 107, 0.15);
+      color: var(--danger)
+    }
+
+    .compliance-badge.unknown {
+      background: rgba(90, 122, 154, 0.15);
+      color: var(--muted)
+    }
+
+    .rule-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px 14px;
+      margin-bottom: 8px
+    }
+
+    .rule-card.inactive {
+      opacity: 0.45
+    }
+
+    .policy-doc-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: var(--surface2);
+      border-radius: 6px;
+      margin-bottom: 8px;
+      font-size: 12px
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
@@ -689,8 +736,14 @@
           </svg>
           Users
         </div>
+        <div class="nav-item admin-only" onclick="navigate('policy')" style="display:none" id="nav-policy">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M8 1l5 2v5c0 3-2.5 5.5-5 7-2.5-1.5-5-4-5-7V3l5-2z" />
+            <path d="M5.5 8l2 2 3-3" />
+          </svg>
+          Policy
+        </div>
       </div>
-
 
       <!-- MAIN -->
       <div class="main">
@@ -907,6 +960,78 @@
             </div>
           </div>
           <div id="search-results"></div>
+        </div>
+
+        <!-- POLICY PAGE (ADMIN ONLY) -->
+        <div class="page" id="page-policy">
+          <div class="page-title">Policy Compliance</div>
+          <div class="page-sub">Manage hospital policies and compliance rules</div>
+          <div id="policy-alert" class="alert"></div>
+
+          <div class="grid2" style="margin-bottom:20px">
+
+            <!-- Left col: upload doc + add rule -->
+            <div style="display:flex;flex-direction:column;gap:12px">
+
+              <div class="card">
+                <div class="card-title">upload policy document</div>
+                <input type="text" id="policy-title" placeholder="Document title (e.g. Antibiotic Protocol)"
+                  style="margin-bottom:8px">
+                <textarea id="policy-description" placeholder="Description (optional)"
+                  style="min-height:50px;margin-bottom:8px"></textarea>
+                <div class="upload-zone" id="policy-upload-zone"
+                  onclick="document.getElementById('policy-file-input').click()" style="padding:16px;margin-bottom:0">
+                  <div class="upload-icon" style="font-size:20px">⬆</div>
+                  <div style="font-size:11px">Click to upload PDF, DOCX, or TXT</div>
+                </div>
+                <input type="file" id="policy-file-input" style="display:none" accept=".pdf,.docx,.txt"
+                  onchange="uploadPolicyDocument(this)">
+              </div>
+
+              <div class="card">
+                <div class="card-title">add manual rule</div>
+                <input type="text" id="rule-title" placeholder="Rule title (e.g. Pneumonia First-Line Antibiotic)"
+                  style="margin-bottom:8px">
+                <textarea id="rule-condition" placeholder="Condition (e.g. Diagnosis includes Pneumonia)"
+                  style="min-height:55px;margin-bottom:8px"></textarea>
+                <textarea id="rule-requirement"
+                  placeholder="Requirement (e.g. Must prescribe Amoxicillin or Azithromycin)"
+                  style="min-height:55px;margin-bottom:8px"></textarea>
+                <select id="rule-severity" style="margin-bottom:10px">
+                  <option value="warning">Warning</option>
+                  <option value="critical">Critical</option>
+                </select>
+                <button class="btn" style="width:100%" onclick="createPolicyRule()">Add Rule</button>
+              </div>
+            </div>
+
+            <!-- Right col: policy docs list + rules list -->
+            <div style="display:flex;flex-direction:column;gap:12px">
+
+              <div class="card">
+                <div class="card-title">policy documents</div>
+                <div id="policy-docs-list">
+                  <div class="empty-state">No policy documents uploaded yet.</div>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="card-title">manual rules</div>
+                <div id="policy-rules-list">
+                  <div class="empty-state">No rules defined yet.</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Compliance history -->
+          <div class="card">
+            <div class="card-title">recent compliance checks</div>
+            <div id="compliance-history-list">
+              <div class="empty-state">No compliance checks yet. Run an extraction to trigger a check.</div>
+            </div>
+          </div>
         </div>
 
         <!-- ANALYTICS PAGE -->
@@ -1141,6 +1266,7 @@
       if (page === 'patients') loadPatients();
       if (page === 'users') loadUsers();
       if (page === 'analytics') loadAnalytics();
+      if (page === 'policy') loadPolicyPage();
       if (page === 'alerts') loadAlerts();
     }
 
@@ -1250,6 +1376,11 @@
           stats.extractions++;
           document.getElementById('stat-extractions').textContent = stats.extractions;
           resultEl.innerHTML = renderExtraction(data);
+          // Render compliance result inline
+          if (data.compliance) {
+            resultEl.innerHTML += renderComplianceInline(data.compliance);
+          }
+
           // Auto-navigate to Alerts if any alert was generated
           if (data.alert_count && data.alert_count > 0) {
             showAlert('ext-alert', `Extraction complete — ${data.alert_count} alert(s) detected!`, 'error');
@@ -1899,6 +2030,199 @@
       updateAlertBadge();
     }
     // ── End Alerts ──────────────────────────────────────────────
+
+    // ── Policy & Compliance ────────────────────────────────────
+
+    function renderComplianceInline(c) {
+      if (!c) return '';
+      const statusEmoji = { compliant: '✅', deviation: '⚠️', unknown: '❓' };
+      const emoji = statusEmoji[c.status] || '❓';
+      let deviationsHtml = '';
+      if (c.deviations && c.deviations.length > 0) {
+        deviationsHtml = `
+          <div style="margin-top:10px">
+            ${c.deviations.map(d => `
+              <div style="padding:8px 10px;background:rgba(255,107,107,0.07);border:1px solid rgba(255,107,107,0.2);border-radius:5px;margin-bottom:6px">
+                <div style="font-size:10px;color:var(--danger);font-weight:600;margin-bottom:3px">${d.severity?.toUpperCase()} — ${sanitize(d.rule || '')}</div>
+                <div style="font-size:11px;color:var(--text)">${sanitize(d.detail || '')}</div>
+              </div>
+            `).join('')}
+          </div>`;
+      }
+      return `
+        <div style="margin-top:12px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:6px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <span style="font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">policy compliance</span>
+            <span class="compliance-badge ${c.status}">${emoji} ${c.status}</span>
+            <span style="font-size:10px;color:var(--muted);margin-left:auto">${c.rules_checked} rule(s) checked</span>
+          </div>
+          <div style="font-size:12px;color:var(--text);line-height:1.7">${sanitize(c.summary)}</div>
+          ${deviationsHtml}
+        </div>`;
+    }
+
+    async function loadPolicyPage() {
+      loadPolicyDocs();
+      loadPolicyRules();
+      loadComplianceHistory();
+    }
+
+    async function uploadPolicyDocument(input) {
+      const file = input.files[0];
+      if (!file) return;
+      const title = document.getElementById('policy-title').value.trim();
+      if (!title) { showAlert('policy-alert', 'Please enter a document title.', 'error'); return; }
+      const description = document.getElementById('policy-description').value.trim();
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('title', title);
+      formData.append('description', description);
+      const zone = document.getElementById('policy-upload-zone');
+      zone.innerHTML = '<div class="upload-icon" style="font-size:20px"><span class="spinner"></span></div><div style="font-size:11px">Ingesting policy document...</div>';
+      try {
+        const res = await apiFetch(API + '/compliance/policy-documents/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (res.ok) {
+          showAlert('policy-alert', data.message, 'success');
+          document.getElementById('policy-title').value = '';
+          document.getElementById('policy-description').value = '';
+          loadPolicyDocs();
+        } else {
+          showAlert('policy-alert', data.detail || 'Upload failed.', 'error');
+        }
+      } catch (e) {
+        showAlert('policy-alert', 'Could not connect to server.', 'error');
+      }
+      zone.innerHTML = '<div class="upload-icon" style="font-size:20px">⬆</div><div style="font-size:11px">Click to upload PDF, DOCX, or TXT</div>';
+      input.value = '';
+    }
+
+    async function loadPolicyDocs() {
+      const el = document.getElementById('policy-docs-list');
+      try {
+        const res = await apiFetch(API + '/compliance/policy-documents/list');
+        const data = await res.json();
+        if (data.length === 0) { el.innerHTML = '<div class="empty-state">No policy documents uploaded yet.</div>'; return; }
+        el.innerHTML = data.map(d => `
+          <div class="policy-doc-card">
+            <span style="font-size:18px">📋</span>
+            <div style="flex:1">
+              <div style="color:var(--text);font-weight:500">${sanitize(d.title)}</div>
+              <div style="font-size:10px;color:var(--muted)">${sanitize(d.filename)} · ${d.chunk_count} chunks · by ${sanitize(d.uploaded_by)}</div>
+              ${d.description ? `<div style="font-size:10px;color:var(--muted);margin-top:2px">${sanitize(d.description)}</div>` : ''}
+            </div>
+            <button class="btn btn-danger btn-sm" onclick="deletePolicyDoc(${d.id},'${sanitize(d.title)}')">Delete</button>
+          </div>
+        `).join('');
+      } catch (e) { el.innerHTML = '<div class="empty-state">Failed to load policy documents.</div>'; }
+    }
+
+    async function deletePolicyDoc(id, title) {
+      if (!confirm('Delete policy document "' + title + '"?')) return;
+      const res = await apiFetch(API + '/compliance/policy-documents/' + id, { method: 'DELETE' });
+      const data = await res.json();
+      if (res.ok) { showAlert('policy-alert', data.message, 'success'); loadPolicyDocs(); }
+      else { showAlert('policy-alert', data.detail || 'Delete failed.', 'error'); }
+    }
+
+    async function createPolicyRule() {
+      const title = document.getElementById('rule-title').value.trim();
+      const condition = document.getElementById('rule-condition').value.trim();
+      const requirement = document.getElementById('rule-requirement').value.trim();
+      const severity = document.getElementById('rule-severity').value;
+      if (!title || !condition || !requirement) {
+        showAlert('policy-alert', 'Title, condition, and requirement are required.', 'error'); return;
+      }
+      const res = await apiFetch(API + '/compliance/rules/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, condition, requirement, severity })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showAlert('policy-alert', data.message, 'success');
+        document.getElementById('rule-title').value = '';
+        document.getElementById('rule-condition').value = '';
+        document.getElementById('rule-requirement').value = '';
+        loadPolicyRules();
+      } else {
+        showAlert('policy-alert', data.detail || 'Failed to create rule.', 'error');
+      }
+    }
+
+    async function loadPolicyRules() {
+      const el = document.getElementById('policy-rules-list');
+      try {
+        const res = await apiFetch(API + '/compliance/rules/list');
+        const data = await res.json();
+        if (data.length === 0) { el.innerHTML = '<div class="empty-state">No rules defined yet.</div>'; return; }
+        const severityColor = { critical: 'var(--danger)', warning: 'var(--warn)' };
+        el.innerHTML = data.map(r => `
+          <div class="rule-card ${r.is_active ? '' : 'inactive'}">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+              <div style="display:flex;align-items:center;gap:6px">
+                <span style="font-size:10px;font-weight:600;color:${severityColor[r.severity] || 'var(--muted)'}">${r.severity.toUpperCase()}</span>
+                <span style="font-size:12px;color:var(--text)">${sanitize(r.title)}</span>
+                ${!r.is_active ? '<span style="font-size:10px;color:var(--muted)">(inactive)</span>' : ''}
+              </div>
+              <div style="display:flex;gap:6px">
+                <button class="btn btn-outline btn-sm" onclick="togglePolicyRule(${r.id},'${sanitize(r.title)}')">${r.is_active ? 'Disable' : 'Enable'}</button>
+                <button class="btn btn-danger btn-sm" onclick="deletePolicyRule(${r.id},'${sanitize(r.title)}')">Delete</button>
+              </div>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:3px">IF: <span style="color:var(--text)">${sanitize(r.condition)}</span></div>
+            <div style="font-size:11px;color:var(--muted)">THEN: <span style="color:var(--text)">${sanitize(r.requirement)}</span></div>
+          </div>
+        `).join('');
+      } catch (e) { el.innerHTML = '<div class="empty-state">Failed to load rules.</div>'; }
+    }
+
+    async function togglePolicyRule(id, title) {
+      const res = await apiFetch(API + '/compliance/rules/' + id + '/toggle', { method: 'PATCH' });
+      const data = await res.json();
+      if (res.ok) { loadPolicyRules(); }
+      else { showAlert('policy-alert', data.detail || 'Failed to toggle rule.', 'error'); }
+    }
+
+    async function deletePolicyRule(id, title) {
+      if (!confirm('Delete rule "' + title + '"?')) return;
+      const res = await apiFetch(API + '/compliance/rules/' + id, { method: 'DELETE' });
+      const data = await res.json();
+      if (res.ok) { showAlert('policy-alert', data.message, 'success'); loadPolicyRules(); }
+      else { showAlert('policy-alert', data.detail || 'Delete failed.', 'error'); }
+    }
+
+    async function loadComplianceHistory() {
+      const el = document.getElementById('compliance-history-list');
+      try {
+        const res = await apiFetch(API + '/compliance/history');
+        const data = await res.json();
+        if (data.length === 0) {
+          el.innerHTML = '<div class="empty-state">No compliance checks yet.</div>'; return;
+        }
+        const statusEmoji = { compliant: '✅', deviation: '⚠️', unknown: '❓' };
+        el.innerHTML = data.map(r => `
+          <div style="padding:12px 14px;background:var(--surface2);border-radius:6px;margin-bottom:8px;border-left:3px solid ${r.status === 'compliant' ? 'var(--teal)' : r.status === 'deviation' ? 'var(--danger)' : 'var(--border)'}">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="compliance-badge ${r.status}">${statusEmoji[r.status]} ${r.status}</span>
+                <span style="font-size:10px;color:var(--muted)">Extraction #${r.extraction_id}</span>
+                <span style="font-size:10px;color:var(--muted)">${r.rules_checked} rule(s) checked</span>
+              </div>
+              <span style="font-size:10px;color:var(--muted)">${new Date(r.created_at).toLocaleString()}</span>
+            </div>
+            <div style="font-size:12px;color:var(--text);margin-bottom:${r.deviations.length > 0 ? '8px' : '0'}">${sanitize(r.summary)}</div>
+            ${r.deviations.map(d => `
+              <div style="padding:6px 10px;background:rgba(255,107,107,0.07);border:1px solid rgba(255,107,107,0.2);border-radius:4px;margin-bottom:4px">
+                <div style="font-size:10px;color:var(--danger);font-weight:600">${d.severity?.toUpperCase()} — ${sanitize(d.rule || '')}</div>
+                <div style="font-size:11px;color:var(--text)">${sanitize(d.detail || '')}</div>
+              </div>
+            `).join('')}
+          </div>
+        `).join('');
+      } catch (e) { el.innerHTML = '<div class="empty-state">Failed to load compliance history.</div>'; }
+    }
+    // ── End Policy & Compliance ─────────────────────────────────
 
     // ── Analytics ──────────────────────────────────────────────
     let _anCharts = {};

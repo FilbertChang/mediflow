@@ -8,7 +8,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from app.routers import documents, extraction, rag, summarization, search, patients, export, health, auth, analytics, alerts
+from app.routers import documents, extraction, rag, summarization, search, patients, export, health, auth, analytics, alerts, compliance
 from app.database import engine
 from app.models import models
 from app.limiter import limiter
@@ -52,6 +52,7 @@ app.include_router(patients.router)
 app.include_router(export.router)
 app.include_router(analytics.router)
 app.include_router(alerts.router)
+app.include_router(compliance.router)
 
 @app.get("/")
 def root():

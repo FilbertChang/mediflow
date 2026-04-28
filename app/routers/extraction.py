@@ -35,12 +35,10 @@ def extract_from_note(
     )
     db.add(record)
     db.commit()
-    db.refresh(record)
+    db.refresh(record)  # ← harus di sini, sebelum apapun yang butuh record.id
 
     # Run alert engine
     alerts = analyze_extraction(result)
-
-    # Persist alerts to DB
     for alert in alerts:
         db.add(Alert(
             extraction_id=record.id,
@@ -50,7 +48,33 @@ def extract_from_note(
         ))
     db.commit()
 
-# Dispatch notifications (fire-and-forget, never blocks response)
+    # Auto compliance check
+    compliance_result = None
+    try:
+        from app.services.compliance import run_compliance_check
+        from app.models.models import ComplianceHistory
+        compliance_result = run_compliance_check(result, db)
+        db.add(ComplianceHistory(
+            extraction_id=record.id,
+            status=compliance_result.status,
+            summary=compliance_result.summary,
+            deviations_json=json.dumps(compliance_result.deviations),
+            rules_checked=compliance_result.rules_checked,
+            policy_docs_used=json.dumps(compliance_result.policy_docs_used),
+        ))
+        if compliance_result.status == "deviation":
+            for dev in compliance_result.deviations:
+                db.add(Alert(
+                    extraction_id=record.id,
+                    severity=dev.get("severity", "warning"),
+                    alert_type="policy_violation",
+                    message=f"[Policy] {dev.get('rule', '')}: {dev.get('detail', '')}",
+                ))
+        db.commit()
+    except Exception:
+        pass  # compliance check never crashes extraction
+
+    # Dispatch notifications (fire-and-forget)
     if alerts:
         patient_name = result.get("patient_name")
         import threading
@@ -63,6 +87,7 @@ def extract_from_note(
         **result,
         "alerts": [a.to_dict() for a in alerts],
         "alert_count": len(alerts),
+        "compliance": compliance_result.to_dict() if compliance_result else None,
     }
 
 @router.get("/history")

@@ -16,7 +16,8 @@ A production-ready local healthcare AI platform built with FastAPI, LangChain, a
 | 📊 CSV Export | Export extraction, chat, and summary history to CSV |
 | 📈 Analytics Dashboard | Visualize top diagnoses, medications, ICD-10 codes, and extraction volume over time |
 | 🚨 Proactive Alerting | Auto-detect drug interactions, high-risk ICD-10 codes, dangerous medications, and missing fields after every extraction — with email and Slack notifications |
-| 🗄️ PostgreSQL | Persistent storage for all history, patient records, and alerts |
+| 🛡️ Policy Compliance | Check extractions against hospital policy documents (RAG-based) and manual rules — deviations flagged automatically |
+| 🗄️ PostgreSQL | Persistent storage for all history, patient records, alerts, and compliance logs |
 | 📡 LangSmith | Trace every LLM call across all pipelines |
 | 🏥 Health Check | Monitor database, Ollama, and storage status in real time |
 | 🐳 Docker | One-command deployment with Docker Compose |
@@ -115,6 +116,18 @@ When alerts are detected:
 - Email digest sent via SendGrid
 - Slack message posted (if `SLACK_WEBHOOK_URL` is configured)
 
+## Policy Compliance System
+
+Admins can configure hospital protocols that are automatically checked after every extraction:
+
+| Component | Description |
+|---|---|
+| Policy Documents | Upload PDF/DOCX/TXT hospital SOPs — ingested into a dedicated FAISS vectorstore |
+| Manual Rules | Add structured IF/THEN rules via UI (e.g. "If Pneumonia → must prescribe Amoxicillin") |
+| Auto Check | Every extraction triggers a RAG-based compliance check against all active policies |
+| Deviation Alerts | Non-compliant extractions are flagged with `policy_violation` alerts |
+| Compliance History | All checks are logged with status (compliant / deviation / unknown) and full deviation details |
+
 ## Security
 
 | Protection | Implementation |
@@ -148,6 +161,8 @@ When alerts are detected:
 | Analytics dashboard | ✅ | ✅ | ✅ |
 | View alerts | ✅ | ✅ | ✅ |
 | Delete alerts | ✅ | ✅ | ❌ |
+| Manage policies & rules | ✅ | ❌ | ❌ |
+| View compliance history | ✅ | ✅ | ❌ |
 
 ## API Endpoints
 
@@ -158,7 +173,7 @@ When alerts are detected:
 | POST | `/documents/upload` | Upload a document |
 | GET | `/documents/list` | List uploaded documents |
 | DELETE | `/documents/delete/{filename}` | Delete a document |
-| POST | `/extract/clinical` | Extract EHR fields and run alert analysis |
+| POST | `/extract/clinical` | Extract EHR fields, run alert analysis, and compliance check |
 | GET | `/extract/history` | Get extraction history |
 | POST | `/rag/ingest` | Ingest document into vector store |
 | POST | `/rag/chat` | Ask questions about a document |
@@ -183,6 +198,15 @@ When alerts are detected:
 | PATCH | `/alerts/{id}/read` | Mark alert as read |
 | PATCH | `/alerts/mark-all-read` | Mark all alerts as read |
 | DELETE | `/alerts/{id}` | Delete an alert |
+| POST | `/compliance/policy-documents/upload` | Upload and ingest a policy document |
+| GET | `/compliance/policy-documents/list` | List all policy documents |
+| DELETE | `/compliance/policy-documents/{id}` | Delete a policy document |
+| POST | `/compliance/rules/create` | Create a manual policy rule |
+| GET | `/compliance/rules/list` | List all policy rules |
+| PATCH | `/compliance/rules/{id}/toggle` | Enable or disable a rule |
+| DELETE | `/compliance/rules/{id}` | Delete a rule |
+| POST | `/compliance/check` | Run compliance check on an extraction |
+| GET | `/compliance/history` | Get compliance check history |
 | POST | `/auth/register` | Create a new user (admin only) |
 | POST | `/auth/login` | Login and receive JWT token |
 | GET | `/auth/me` | Get current user info |
@@ -197,8 +221,9 @@ mediflow/
 │   ├── routers/
 │   │   ├── alerts.py          # Clinical alert endpoints
 │   │   ├── analytics.py       # Analytics dashboard endpoints
+│   │   ├── compliance.py      # Policy compliance endpoints
 │   │   ├── documents.py       # File upload and management
-│   │   ├── extraction.py      # Clinical NLP extraction + alert trigger
+│   │   ├── extraction.py      # Clinical NLP extraction + alert + compliance trigger
 │   │   ├── rag.py             # RAG chat endpoints
 │   │   ├── summarization.py   # Auto summarization
 │   │   ├── search.py          # Semantic search
@@ -209,6 +234,7 @@ mediflow/
 │   ├── auth.py                # JWT logic, password hashing, role checkers
 │   ├── services/
 │   │   ├── alert_engine.py    # Multi-layer clinical alert detection
+│   │   ├── compliance.py      # RAG-based policy compliance checker
 │   │   ├── notifier.py        # SendGrid email + Slack dispatcher
 │   │   ├── extractor.py       # LangChain extraction logic
 │   │   ├── rag.py             # RAG + section-aware chunking
@@ -219,9 +245,11 @@ mediflow/
 │   ├── database.py            # PostgreSQL connection
 │   └── main.py                # FastAPI app entry point
 ├── static/
-│   └── index.html             # Frontend (Chart.js, alert badge, alerts page)
-├── uploads/                   # Uploaded documents
-├── vectorstore/               # FAISS embeddings
+│   └── index.html             # Frontend (Chart.js, alerts, compliance, policy pages)
+├── uploads/                   # Uploaded medical documents
+├── policy_uploads/            # Uploaded policy documents
+├── vectorstore/               # FAISS embeddings (medical documents)
+├── policy_vectorstore/        # FAISS embeddings (policy documents)
 ├── Dockerfile
 ├── docker-compose.yml
 ├── requirements.txt
