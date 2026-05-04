@@ -7,3 +7,5 @@ vectorstore/
 uploads/
 *.txt~
 New Text Document.txt
+service_account.json
+.claude/

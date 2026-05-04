@@ -6,7 +6,7 @@ services:
     volumes:
       - ./uploads:/app/uploads
       - ./vectorstore:/app/vectorstore
-      - ./static:/app/static
+      - ./frontend/static:/app/static
     environment:
       - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/mediflow
     depends_on:
