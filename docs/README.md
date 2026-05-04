@@ -52,7 +52,7 @@ cd mediflow
 python -m venv venv
 venv\Scripts\activate
 
-pip install -r requirements.txt
+pip install -r backend/requirements.txt
 ```
 
 Create a `.env` file in the root directory:
@@ -88,7 +88,8 @@ SLACK_INTEGRATION_WEBHOOK=https://hooks.slack.com/services/xxx
 
 Then run:
 ```bash
-.\venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+cd backend
+..\venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ### With Docker
@@ -241,46 +242,50 @@ All integrations are optional — if not configured in `.env`, they are silently
 ## Project Structure
 ```
 mediflow/
-├── app/
-│   ├── routers/
-│   │   ├── alerts.py          # Clinical alert endpoints
-│   │   ├── analytics.py       # Analytics dashboard endpoints
-│   │   ├── compliance.py      # Policy compliance endpoints
-│   │   ├── integrations.py    # External integration endpoints
-│   │   ├── documents.py       # File upload and management
-│   │   ├── extraction.py      # Clinical NLP extraction + alert + compliance + integrations
-│   │   ├── rag.py             # RAG chat endpoints
-│   │   ├── summarization.py   # Auto summarization
-│   │   ├── search.py          # Semantic search
-│   │   ├── patients.py        # Patient profiles
-│   │   ├── export.py          # CSV export
-│   │   ├── health.py          # Health check
-│   │   └── auth.py            # JWT authentication & user management
-│   ├── auth.py                # JWT logic, password hashing, role checkers
-│   ├── services/
-│   │   ├── alert_engine.py    # Multi-layer clinical alert detection
-│   │   ├── compliance.py      # RAG-based policy compliance checker
-│   │   ├── integrations.py    # Google Sheets, Power BI, Slack dispatcher
-│   │   ├── notifier.py        # SendGrid email + Slack alert dispatcher
-│   │   ├── extractor.py       # LangChain extraction logic
-│   │   ├── rag.py             # RAG + section-aware chunking
-│   │   ├── summarizer.py      # Summarization logic
-│   │   └── search.py          # Semantic search logic
-│   ├── models/
-│   │   └── models.py          # SQLAlchemy database models
-│   ├── database.py            # PostgreSQL connection
-│   └── main.py                # FastAPI app entry point
-├── static/
-│   └── index.html             # Frontend (Chart.js, alerts, compliance, integrations pages)
-├── uploads/                   # Uploaded medical documents
-├── policy_uploads/            # Uploaded policy documents
-├── vectorstore/               # FAISS embeddings (medical documents)
-├── policy_vectorstore/        # FAISS embeddings (policy documents)
-├── service_account.json       # Google Service Account key (not committed)
+├── backend/
+│   ├── app/
+│   │   ├── routers/
+│   │   │   ├── alerts.py          # Clinical alert endpoints
+│   │   │   ├── analytics.py       # Analytics dashboard endpoints
+│   │   │   ├── compliance.py      # Policy compliance endpoints
+│   │   │   ├── integrations.py    # External integration endpoints
+│   │   │   ├── documents.py       # File upload and management
+│   │   │   ├── extraction.py      # Clinical NLP extraction + alert + compliance + integrations
+│   │   │   ├── rag.py             # RAG chat endpoints
+│   │   │   ├── summarization.py   # Auto summarization
+│   │   │   ├── search.py          # Semantic search
+│   │   │   ├── patients.py        # Patient profiles
+│   │   │   ├── export.py          # CSV export
+│   │   │   ├── health.py          # Health check
+│   │   │   └── auth.py            # JWT authentication & user management
+│   │   ├── auth.py                # JWT logic, password hashing, role checkers
+│   │   ├── services/
+│   │   │   ├── alert_engine.py    # Multi-layer clinical alert detection
+│   │   │   ├── compliance.py      # RAG-based policy compliance checker
+│   │   │   ├── integrations.py    # Google Sheets, Power BI, Slack dispatcher
+│   │   │   ├── notifier.py        # SendGrid email + Slack alert dispatcher
+│   │   │   ├── extractor.py       # LangChain extraction logic
+│   │   │   ├── rag.py             # RAG + section-aware chunking
+│   │   │   ├── summarizer.py      # Summarization logic
+│   │   │   └── search.py          # Semantic search logic
+│   │   ├── models/
+│   │   │   └── models.py          # SQLAlchemy database models
+│   │   ├── database.py            # PostgreSQL connection
+│   │   └── main.py                # FastAPI app entry point
+│   └── requirements.txt
+├── frontend/
+│   └── static/
+│       └── index.html             # Frontend (Chart.js, alerts, compliance, integrations pages)
+├── docs/
+│   └── README.md
+├── uploads/                       # Uploaded medical documents
+├── policy_uploads/                # Uploaded policy documents
+├── vectorstore/                   # FAISS embeddings (medical documents)
+├── policy_vectorstore/            # FAISS embeddings (policy documents)
+├── CLAUDE.md                      # AI coding guidelines
 ├── Dockerfile
 ├── docker-compose.yml
-├── requirements.txt
-└── .env                       # Environment variables (not committed)
+└── .env                           # Environment variables (not committed)
 ```
 
 ## Author

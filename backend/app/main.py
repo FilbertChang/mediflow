@@ -1,6 +1,10 @@
 from dotenv import load_dotenv
+from pathlib import Path
 import os
 load_dotenv()
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+STATIC_DIR = BASE_DIR / "static" if (BASE_DIR / "static").exists() else BASE_DIR.parent / "frontend" / "static"
 
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
@@ -40,7 +44,7 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={"detail": "An unexpected error occurred."}
     )
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 app.include_router(auth.router)
 app.include_router(health.router)
 app.include_router(documents.router)
@@ -57,7 +61,7 @@ app.include_router(integrations.router)
 
 @app.get("/")
 def root():
-    return FileResponse("static/index.html")
+    return FileResponse(str(STATIC_DIR / "index.html"))
 
 @app.get("/api/info")
 def api_info():
