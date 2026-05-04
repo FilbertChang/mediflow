@@ -15,8 +15,9 @@ A production-ready local healthcare AI platform built with FastAPI, LangChain, a
 | 👤 Patient Profiles | Group documents and extractions by patient |
 | 📊 CSV Export | Export extraction, chat, and summary history to CSV |
 | 📈 Analytics Dashboard | Visualize top diagnoses, medications, ICD-10 codes, and extraction volume over time |
-| 🚨 Proactive Alerting | Auto-detect drug interactions, high-risk ICD-10 codes, dangerous medications, and missing fields after every extraction — with email and Slack notifications |
+| 🚨 Proactive Alerting | Auto-detect drug interactions, high-risk ICD-10 codes, dangerous medications, and missing fields — with email and Slack notifications |
 | 🛡️ Policy Compliance | Check extractions against hospital policy documents (RAG-based) and manual rules — deviations flagged automatically |
+| 🔗 External Integrations | Push extraction data to Google Sheets, Power BI, and Slack automatically or on demand |
 | 🗄️ PostgreSQL | Persistent storage for all history, patient records, alerts, and compliance logs |
 | 📡 LangSmith | Trace every LLM call across all pipelines |
 | 🏥 Health Check | Monitor database, Ollama, and storage status in real time |
@@ -35,7 +36,8 @@ A production-ready local healthcare AI platform built with FastAPI, LangChain, a
 | Chunking | Section-aware + SemanticChunker fallback |
 | Database | PostgreSQL, SQLAlchemy |
 | Observability | LangSmith |
-| Notifications | SendGrid (email), Slack Webhooks (optional) |
+| Notifications | SendGrid (email), Slack Webhooks |
+| Integrations | Google Sheets API, Power BI Push API, Slack |
 | Frontend | HTML, CSS, JavaScript, Chart.js |
 | DevOps | Docker, Docker Compose |
 
@@ -65,18 +67,28 @@ LANGCHAIN_API_KEY=your_langsmith_key
 LANGCHAIN_PROJECT=mediflow
 OLLAMA_BASE_URL=http://localhost:11434
 
-# Alerting (required for email notifications)
+# Alert email notifications (optional)
 SENDGRID_API_KEY=your_sendgrid_api_key
-ALERT_EMAIL_FROM=mediflow@yourdomain.com
+ALERT_EMAIL_FROM=you@yourdomain.com
 ALERT_EMAIL_TO=doctor@hospital.com
 
-# Alerting (optional — only if using Slack)
+# Slack alert notifications (optional)
 SLACK_WEBHOOK_URL=https://hooks.slack.com/services/xxx
+
+# Google Sheets integration (optional)
+GOOGLE_SERVICE_ACCOUNT_JSON=service_account.json
+GOOGLE_SHEET_ID=your_spreadsheet_id
+
+# Power BI integration (optional — requires Power BI Premium)
+POWERBI_PUSH_URL=https://api.powerbi.com/beta/xxx/datasets/xxx/rows
+
+# Slack integration — extraction summaries (optional)
+SLACK_INTEGRATION_WEBHOOK=https://hooks.slack.com/services/xxx
 ```
 
 Then run:
 ```bash
-uvicorn app.main:app --reload
+.\venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ### With Docker
@@ -96,7 +108,6 @@ Open **http://localhost:8000**
 - Ollama with Llama 3.2 — `ollama pull llama3.2`
 - PostgreSQL (or Docker — PostgreSQL is included automatically)
 - LangSmith account (free) — https://smith.langchain.com
-- SendGrid account (free tier) — https://sendgrid.com
 
 ## Alert System
 
@@ -110,11 +121,7 @@ MediFlow automatically analyzes every extraction result through a multi-layer de
 | Known drug-drug interactions (30+ pairs) | Hardcoded ruleset | Critical |
 | Unknown drug-drug interactions | Llama 3.2 LLM fallback | Critical |
 
-When alerts are detected:
-- User is automatically navigated to the **Alerts page**
-- Unread badge appears on the sidebar nav item
-- Email digest sent via SendGrid
-- Slack message posted (if `SLACK_WEBHOOK_URL` is configured)
+When alerts are detected the user is automatically navigated to the Alerts page, an unread badge appears on the sidebar, an email digest is sent via SendGrid, and a Slack message is posted if configured.
 
 ## Policy Compliance System
 
@@ -126,7 +133,19 @@ Admins can configure hospital protocols that are automatically checked after eve
 | Manual Rules | Add structured IF/THEN rules via UI (e.g. "If Pneumonia → must prescribe Amoxicillin") |
 | Auto Check | Every extraction triggers a RAG-based compliance check against all active policies |
 | Deviation Alerts | Non-compliant extractions are flagged with `policy_violation` alerts |
-| Compliance History | All checks are logged with status (compliant / deviation / unknown) and full deviation details |
+| Compliance History | All checks are logged with status (compliant / deviation / unknown) and deviation details |
+
+## External Integrations
+
+MediFlow can push extraction data to external services automatically after each extraction or on demand:
+
+| Integration | Trigger | Description |
+|---|---|---|
+| Google Sheets | Auto + Manual | Appends each extraction as a new row to a configured spreadsheet |
+| Power BI | Auto + Manual | Pushes to a streaming dataset via Push API (requires Power BI Premium) |
+| Slack | Auto + Manual | Posts a rich extraction summary card to a configured channel |
+
+All integrations are optional — if not configured in `.env`, they are silently skipped without affecting the extraction pipeline. Admins can also trigger a bulk sync of the last 100 extractions from the Integrations page.
 
 ## Security
 
@@ -163,6 +182,8 @@ Admins can configure hospital protocols that are automatically checked after eve
 | Delete alerts | ✅ | ✅ | ❌ |
 | Manage policies & rules | ✅ | ❌ | ❌ |
 | View compliance history | ✅ | ✅ | ❌ |
+| Manual integration sync | ✅ | ✅ | ❌ |
+| Bulk integration sync | ✅ | ❌ | ❌ |
 
 ## API Endpoints
 
@@ -173,7 +194,7 @@ Admins can configure hospital protocols that are automatically checked after eve
 | POST | `/documents/upload` | Upload a document |
 | GET | `/documents/list` | List uploaded documents |
 | DELETE | `/documents/delete/{filename}` | Delete a document |
-| POST | `/extract/clinical` | Extract EHR fields, run alert analysis, and compliance check |
+| POST | `/extract/clinical` | Extract EHR fields, run alerts, compliance check, and integrations |
 | GET | `/extract/history` | Get extraction history |
 | POST | `/rag/ingest` | Ingest document into vector store |
 | POST | `/rag/chat` | Ask questions about a document |
@@ -207,6 +228,9 @@ Admins can configure hospital protocols that are automatically checked after eve
 | DELETE | `/compliance/rules/{id}` | Delete a rule |
 | POST | `/compliance/check` | Run compliance check on an extraction |
 | GET | `/compliance/history` | Get compliance check history |
+| GET | `/integrations/status` | Check which integrations are configured |
+| POST | `/integrations/sync` | Manually sync an extraction to selected integrations |
+| POST | `/integrations/sync-all` | Bulk sync last 100 extractions (admin only) |
 | POST | `/auth/register` | Create a new user (admin only) |
 | POST | `/auth/login` | Login and receive JWT token |
 | GET | `/auth/me` | Get current user info |
@@ -222,8 +246,9 @@ mediflow/
 │   │   ├── alerts.py          # Clinical alert endpoints
 │   │   ├── analytics.py       # Analytics dashboard endpoints
 │   │   ├── compliance.py      # Policy compliance endpoints
+│   │   ├── integrations.py    # External integration endpoints
 │   │   ├── documents.py       # File upload and management
-│   │   ├── extraction.py      # Clinical NLP extraction + alert + compliance trigger
+│   │   ├── extraction.py      # Clinical NLP extraction + alert + compliance + integrations
 │   │   ├── rag.py             # RAG chat endpoints
 │   │   ├── summarization.py   # Auto summarization
 │   │   ├── search.py          # Semantic search
@@ -235,7 +260,8 @@ mediflow/
 │   ├── services/
 │   │   ├── alert_engine.py    # Multi-layer clinical alert detection
 │   │   ├── compliance.py      # RAG-based policy compliance checker
-│   │   ├── notifier.py        # SendGrid email + Slack dispatcher
+│   │   ├── integrations.py    # Google Sheets, Power BI, Slack dispatcher
+│   │   ├── notifier.py        # SendGrid email + Slack alert dispatcher
 │   │   ├── extractor.py       # LangChain extraction logic
 │   │   ├── rag.py             # RAG + section-aware chunking
 │   │   ├── summarizer.py      # Summarization logic
@@ -245,11 +271,12 @@ mediflow/
 │   ├── database.py            # PostgreSQL connection
 │   └── main.py                # FastAPI app entry point
 ├── static/
-│   └── index.html             # Frontend (Chart.js, alerts, compliance, policy pages)
+│   └── index.html             # Frontend (Chart.js, alerts, compliance, integrations pages)
 ├── uploads/                   # Uploaded medical documents
 ├── policy_uploads/            # Uploaded policy documents
 ├── vectorstore/               # FAISS embeddings (medical documents)
 ├── policy_vectorstore/        # FAISS embeddings (policy documents)
+├── service_account.json       # Google Service Account key (not committed)
 ├── Dockerfile
 ├── docker-compose.yml
 ├── requirements.txt

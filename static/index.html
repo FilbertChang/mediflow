@@ -606,6 +606,49 @@
       margin-bottom: 8px;
       font-size: 12px
     }
+
+    .integration-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px
+    }
+
+    .integration-card.connected {
+      border-color: var(--teal-dim)
+    }
+
+    .integration-card.disconnected {
+      opacity: 0.6
+    }
+
+    .integration-icon {
+      font-size: 24px;
+      flex-shrink: 0;
+      margin-top: 2px
+    }
+
+    .integration-status {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 600
+    }
+
+    .integration-status.connected {
+      background: rgba(0, 201, 167, 0.15);
+      color: var(--teal)
+    }
+
+    .integration-status.disconnected {
+      background: rgba(90, 122, 154, 0.15);
+      color: var(--muted)
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
@@ -718,6 +761,15 @@
             <path d="M2 13V8h3v5H2zM6 13V5h3v8H6zM10 13V2h3v11h-3z" />
           </svg>
           Analytics
+        </div>
+        <div class="nav-item" onclick="navigate('integrations')" id="nav-integrations">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="3" cy="8" r="2" />
+            <circle cx="13" cy="3" r="2" />
+            <circle cx="13" cy="13" r="2" />
+            <path d="M5 8h4M11 4.5L5 7.5M11 11.5L5 8.5" />
+          </svg>
+          Integrations
         </div>
         <div class="nav-section">records</div>
         <div class="nav-item" onclick="navigate('patients')">
@@ -960,6 +1012,56 @@
             </div>
           </div>
           <div id="search-results"></div>
+        </div>
+
+        <!-- INTEGRATIONS PAGE -->
+        <div class="page" id="page-integrations">
+          <div class="page-title">Integrations</div>
+          <div class="page-sub">Connect MediFlow to external services</div>
+          <div id="integrations-alert" class="alert"></div>
+
+          <!-- Status cards -->
+          <div id="integrations-status-list" style="margin-bottom:24px">
+            <div class="empty-state"><span class="spinner"></span> Checking integrations...</div>
+          </div>
+
+          <!-- Manual sync -->
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-title">manual sync</div>
+            <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+              <div style="flex:1;min-width:160px">
+                <div style="font-size:10px;color:var(--muted);margin-bottom:6px">EXTRACTION ID</div>
+                <input type="number" id="sync-extraction-id" placeholder="e.g. 21" min="1">
+              </div>
+              <div style="flex:2;min-width:200px">
+                <div style="font-size:10px;color:var(--muted);margin-bottom:6px">TARGETS</div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                  <label
+                    style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text);cursor:pointer">
+                    <input type="checkbox" id="sync-sheets" value="google_sheets" style="width:auto"> Google Sheets
+                  </label>
+                  <label
+                    style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text);cursor:pointer">
+                    <input type="checkbox" id="sync-powerbi" value="powerbi" style="width:auto"> Power BI
+                  </label>
+                  <label
+                    style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text);cursor:pointer">
+                    <input type="checkbox" id="sync-slack" value="slack" style="width:auto"> Slack
+                  </label>
+                </div>
+              </div>
+              <button class="btn btn-sm" onclick="runManualSync()" style="flex-shrink:0">Sync Now</button>
+            </div>
+          </div>
+
+          <!-- Bulk sync (admin only) -->
+          <div class="card admin-only" style="display:none">
+            <div class="card-title">bulk sync</div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:12px;line-height:1.7">
+              Push last 100 extractions to all configured integrations. Use with caution.
+            </div>
+            <button class="btn btn-outline" onclick="runBulkSync()">⬆ Bulk Sync Last 100 Extractions</button>
+          </div>
         </div>
 
         <!-- POLICY PAGE (ADMIN ONLY) -->
@@ -1267,6 +1369,7 @@
       if (page === 'users') loadUsers();
       if (page === 'analytics') loadAnalytics();
       if (page === 'policy') loadPolicyPage();
+      if (page === 'integrations') loadIntegrationsPage();
       if (page === 'alerts') loadAlerts();
     }
 
@@ -2030,6 +2133,114 @@
       updateAlertBadge();
     }
     // ── End Alerts ──────────────────────────────────────────────
+
+    // ── Integrations ───────────────────────────────────────────
+
+    async function loadIntegrationsPage() {
+      const el = document.getElementById('integrations-status-list');
+      try {
+        const res = await apiFetch(API + '/integrations/status');
+        if (!res.ok) { el.innerHTML = '<div class="empty-state">Failed to load integration status.</div>'; return; }
+        const status = await res.json();
+
+        const integrations = [
+          {
+            key: 'google_sheets',
+            icon: '📊',
+            name: 'Google Sheets',
+            description: 'Append each extraction as a new row to a Google Spreadsheet.',
+            setupHint: 'Set GOOGLE_SERVICE_ACCOUNT_JSON and GOOGLE_SHEET_ID in .env'
+          },
+          {
+            key: 'powerbi',
+            icon: '📈',
+            name: 'Power BI',
+            description: 'Push extraction data to a Power BI streaming dataset in real-time.',
+            setupHint: 'Set POWERBI_PUSH_URL in .env (requires Power BI Premium)'
+          },
+          {
+            key: 'slack',
+            icon: '💬',
+            name: 'Slack',
+            description: 'Post an extraction summary to a Slack channel after each extraction.',
+            setupHint: 'Set SLACK_INTEGRATION_WEBHOOK in .env'
+          },
+        ];
+
+        el.innerHTML = integrations.map(i => {
+          const connected = status[i.key];
+          return `
+            <div class="integration-card ${connected ? 'connected' : 'disconnected'}">
+              <div class="integration-icon">${i.icon}</div>
+              <div style="flex:1">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+                  <span style="font-size:13px;color:var(--text);font-weight:500">${i.name}</span>
+                  <span class="integration-status ${connected ? 'connected' : 'disconnected'}">
+                    ${connected ? '✓ Connected' : '○ Not configured'}
+                  </span>
+                </div>
+                <div style="font-size:11px;color:var(--muted);line-height:1.6">${i.description}</div>
+                ${!connected ? `<div style="font-size:10px;color:var(--muted);margin-top:4px;opacity:0.7">Setup: ${i.setupHint}</div>` : ''}
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (e) {
+        el.innerHTML = '<div class="empty-state">Failed to load integration status.</div>';
+      }
+    }
+
+    async function runManualSync() {
+      const extractionId = document.getElementById('sync-extraction-id').value;
+      if (!extractionId) { showAlert('integrations-alert', 'Please enter an extraction ID.', 'error'); return; }
+
+      const targets = [];
+      if (document.getElementById('sync-sheets').checked) targets.push('google_sheets');
+      if (document.getElementById('sync-powerbi').checked) targets.push('powerbi');
+      if (document.getElementById('sync-slack').checked) targets.push('slack');
+      if (targets.length === 0) { showAlert('integrations-alert', 'Please select at least one target.', 'error'); return; }
+
+      const btn = event.currentTarget;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>Syncing...';
+
+      try {
+        const res = await apiFetch(API + '/integrations/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ extraction_id: parseInt(extractionId), targets })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          const type = data.failed.length === 0 ? 'success' : 'error';
+          showAlert('integrations-alert', data.message, type);
+        } else {
+          showAlert('integrations-alert', data.detail || 'Sync failed.', 'error');
+        }
+      } catch (e) {
+        showAlert('integrations-alert', 'Could not connect to server.', 'error');
+      }
+      btn.disabled = false;
+      btn.textContent = 'Sync Now';
+    }
+
+    async function runBulkSync() {
+      if (!confirm('Push last 100 extractions to all configured integrations?')) return;
+      const btn = event.currentTarget;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>Syncing...';
+      try {
+        const res = await apiFetch(API + '/integrations/sync-all', { method: 'POST' });
+        const data = await res.json();
+        if (res.ok) { showAlert('integrations-alert', data.message, 'success'); }
+        else { showAlert('integrations-alert', data.detail || 'Bulk sync failed.', 'error'); }
+      } catch (e) {
+        showAlert('integrations-alert', 'Could not connect to server.', 'error');
+      }
+      btn.disabled = false;
+      btn.textContent = '⬆ Bulk Sync Last 100 Extractions';
+    }
+    // ── End Integrations ────────────────────────────────────────
 
     // ── Policy & Compliance ────────────────────────────────────
 

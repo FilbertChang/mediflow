@@ -83,6 +83,16 @@ def extract_from_note(
             daemon=True
         ).start()
 
+    # Dispatch integrations (fire-and-forget)
+    import threading as _threading
+    _threading.Thread(
+        target=lambda: asyncio.run(
+            __import__('app.services.integrations', fromlist=['dispatch_integrations'])
+            .dispatch_integrations(result, record.id, len(alerts))
+        ),
+        daemon=True
+    ).start()
+
     return {
         **result,
         "alerts": [a.to_dict() for a in alerts],
