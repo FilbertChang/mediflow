@@ -2,6 +2,7 @@ venv/
 __pycache__/
 *.pyc
 *.pyo
+*.db
 .env
 vectorstore/
 uploads/
@@ -9,3 +10,4 @@ uploads/
 New Text Document.txt
 service_account.json
 .claude/
+.pytest_cache/

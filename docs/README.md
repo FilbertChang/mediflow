@@ -239,6 +239,165 @@ All integrations are optional — if not configured in `.env`, they are silently
 | PUT | `/auth/users/{id}/deactivate` | Deactivate a user (admin only) |
 | PUT | `/auth/users/{id}/activate` | Activate a user (admin only) |
 
+## API Examples
+
+Every endpoint except `/health` and `/auth/login` requires a Bearer token. Log in
+first, then send the token as an `Authorization: Bearer <token>` header.
+
+### Log in
+
+`POST /auth/login` — form-encoded credentials (OAuth2 password flow).
+
+```bash
+curl -X POST http://localhost:8000/auth/login \
+  -d "username=admin&password=YOUR_PASSWORD"
+```
+
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer",
+  "username": "admin",
+  "full_name": "System Admin",
+  "role": "admin"
+}
+```
+
+### Upload a document
+
+`POST /documents/upload` — multipart upload (PDF, TXT, DOCX, CSV, XLSX; max 10MB).
+
+```bash
+curl -X POST http://localhost:8000/documents/upload \
+  -H "Authorization: Bearer <token>" \
+  -F "file=@discharge_note.pdf"
+```
+
+```json
+{
+  "message": "'discharge_note.pdf' uploaded successfully.",
+  "path": "uploads/discharge_note.pdf"
+}
+```
+
+### Clinical extraction
+
+`POST /extract/clinical` — extracts structured EHR fields from a free-text note,
+then runs the alert engine and policy compliance check in the same request.
+Requires the `doctor` or `admin` role.
+
+Request:
+```json
+{
+  "note": "Patient Budi, 45 years old, male. History of atrial fibrillation. Currently on Warfarin 5mg daily and Aspirin 81mg daily. ICD-10: I48."
+}
+```
+
+Response:
+```json
+{
+  "patient_name": "Budi",
+  "age": 45,
+  "gender": "male",
+  "diagnosis": ["Atrial fibrillation"],
+  "medications": ["Warfarin 5mg", "Aspirin 81mg"],
+  "icd10_codes": ["I48"],
+  "symptoms": [],
+  "notes": null,
+  "alerts": [
+    {
+      "severity": "critical",
+      "alert_type": "drug_interaction",
+      "message": "🚨 Drug interaction detected: Warfarin + Aspirin significantly increases bleeding risk."
+    }
+  ],
+  "alert_count": 1,
+  "compliance": {
+    "status": "unknown",
+    "summary": "No policies or rules configured yet. Upload a policy document or add manual rules in the Policy page.",
+    "deviations": [],
+    "rules_checked": 0,
+    "policy_docs_used": []
+  }
+}
+```
+
+### Ingest a document for RAG
+
+`POST /rag/ingest` — chunks and embeds an uploaded document into the vector store.
+
+Request:
+```json
+{ "filename": "discharge_note.pdf" }
+```
+
+Response:
+```json
+{
+  "status": "added",
+  "message": "'discharge_note.pdf' ingested. 14 chunks from 3 section(s): ASSESSMENT, PLAN, MEDICATIONS",
+  "chunks": 14,
+  "sections": ["ASSESSMENT", "PLAN", "MEDICATIONS"]
+}
+```
+
+### RAG chat
+
+`POST /rag/chat` — asks a question about an ingested document.
+
+Request:
+```json
+{
+  "filename": "discharge_note.pdf",
+  "question": "What medications was the patient prescribed?"
+}
+```
+
+Response:
+```json
+{
+  "answer": "The patient was prescribed Warfarin 5mg and Aspirin 81mg daily.",
+  "sources": [
+    { "file": "discharge_note.pdf", "section": "MEDICATIONS" }
+  ]
+}
+```
+
+### Semantic search
+
+`POST /search/query` — searches across all ingested documents by meaning.
+
+Request:
+```json
+{ "query": "patients with atrial fibrillation", "top_k": 5 }
+```
+
+Response:
+```json
+{
+  "query": "patients with atrial fibrillation",
+  "results": [
+    {
+      "file": "discharge_note.pdf",
+      "section": "ASSESSMENT",
+      "content": "History of atrial fibrillation, currently anticoagulated...",
+      "score": 0.4127
+    }
+  ]
+}
+```
+
+## Testing
+
+```bash
+pip install -r backend/requirements-dev.txt
+cd backend
+pytest
+```
+
+Tests run fully offline — the database is in-memory SQLite and all LLM / vector-store
+calls are mocked, so neither PostgreSQL nor Ollama is required.
+
 ## Project Structure
 ```
 mediflow/
@@ -272,12 +431,18 @@ mediflow/
 │   │   │   └── models.py          # SQLAlchemy database models
 │   │   ├── database.py            # PostgreSQL connection
 │   │   └── main.py                # FastAPI app entry point
-│   └── requirements.txt
+│   ├── tests/                     # pytest suite (auth, documents, extraction, RAG)
+│   ├── requirements.txt
+│   ├── requirements-dev.txt       # Runtime deps + pytest
+│   └── pytest.ini
 ├── frontend/
 │   └── static/
 │       └── index.html             # Frontend (Chart.js, alerts, compliance, integrations pages)
 ├── docs/
 │   └── README.md
+├── .github/
+│   └── workflows/
+│       └── ci.yml                 # CI: run tests + build Docker image
 ├── uploads/                       # Uploaded medical documents
 ├── policy_uploads/                # Uploaded policy documents
 ├── vectorstore/                   # FAISS embeddings (medical documents)
