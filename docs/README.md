@@ -1,3 +1,18 @@
+<img width="1919" height="916" alt="Screenshot 2026-05-25 194713" src="https://github.com/user-attachments/assets/f647e9bc-b9e2-45aa-a300-bb91a305be14" />
+<img width="1919" height="916" alt="Screenshot 2026-05-25 194725" src="https://github.com/user-attachments/assets/2a0cb20e-892d-4984-93d9-83e1cc909087" />
+<img width="1919" height="915" alt="Screenshot 2026-05-25 194755" src="https://github.com/user-attachments/assets/8b303ac7-6306-4533-b7ff-99983524ac6b" />
+<img width="1919" height="917" alt="Screenshot 2026-05-25 194759" src="https://github.com/user-attachments/assets/97bb9023-a8e6-452c-b54e-a1fe28cbbba9" />
+<img width="1919" height="915" alt="Screenshot 2026-05-25 194804" src="https://github.com/user-attachments/assets/8e3b852e-8613-4fd0-a7f6-b67c630e9bf0" />
+<img width="1919" height="915" alt="Screenshot 2026-05-25 194808" src="https://github.com/user-attachments/assets/4cbe86f6-3e59-48ad-92d7-03bf69d25d9e" />
+<img width="1919" height="915" alt="Screenshot 2026-05-25 194812" src="https://github.com/user-attachments/assets/0cdca3ca-1fd2-49e0-a7d5-5417347b4c48" />
+<img width="1919" height="913" alt="Screenshot 2026-05-25 194816" src="https://github.com/user-attachments/assets/ac17893d-362c-4ff5-97e9-40f52e820b16" />
+<img width="1919" height="918" alt="Screenshot 2026-05-25 194820" src="https://github.com/user-attachments/assets/cc128108-284f-49b9-bc9f-acfa9ba99be9" />
+<img width="1919" height="919" alt="Screenshot 2026-05-25 194824" src="https://github.com/user-attachments/assets/b5cb0f9f-5262-42a0-a732-f15fc3701ef8" />
+<img width="1919" height="915" alt="Screenshot 2026-05-25 194829" src="https://github.com/user-attachments/assets/b3f40925-5dba-40dc-a404-88c7b35e5509" />
+<img width="1919" height="917" alt="Screenshot 2026-05-25 194834" src="https://github.com/user-attachments/assets/a3f0e9c0-a148-4422-8800-1c6a4da3e8c0" />
+<img width="1919" height="917" alt="Screenshot 2026-05-25 194839" src="https://github.com/user-attachments/assets/49a608b3-af01-4251-b6bc-abea83b7b4b7" />
+<img width="1915" height="914" alt="Screenshot 2026-05-25 194843" src="https://github.com/user-attachments/assets/9485546f-a7ce-443b-a654-31437228aa26" />
+
 # MediFlow 🏥
 
 A production-ready local healthcare AI platform built with FastAPI, LangChain, and Ollama.
