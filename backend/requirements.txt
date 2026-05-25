@@ -51,6 +51,7 @@ openpyxl==3.1.5
 orjson==3.11.8
 ormsgpack==1.12.2
 packaging==26.1
+pandas==3.0.3
 passlib==1.7.4
 propcache==0.4.1
 psycopg2-binary==2.9.11
